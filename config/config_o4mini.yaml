@@ -1,0 +1,44 @@
+mcp_proxy:
+  endpoint_url: "http://127.0.0.1:7111"
+  timeout: 300.0
+
+orchestrator:
+  type: thinkingbox
+  agent_model:
+    type: aoai_responses
+    credential:
+      type: az-cli
+    account_name: "<YOUR_AOAI_ACCOUNT>"
+    deployment: "<YOUR_AGENT_DEPLOYMENT>"
+    is_reasoning: true
+    reasoning_source: none
+    reasoning_effort: medium
+    temperature: 1.0
+    max_completion_tokens: 4096
+    api_version: "2025-04-01-preview"
+    timeout: 600.0
+
+judge_model:
+  type: aoai
+  credential:
+    type: az-cli
+  account_name: "<YOUR_AOAI_ACCOUNT>"
+  deployment: "<YOUR_JUDGE_DEPLOYMENT>"
+  temperature: 0.0
+  seed: 42
+  max_completion_tokens: 128
+  api_version: "2025-04-01-preview"
+  timeout: 600.0
+
+judge_type: "legacy" # "motivation"
+
+user_model:
+  type: aoai
+  credential:
+    type: az-cli
+  account_name: "<YOUR_AOAI_ACCOUNT>"
+  deployment: "<YOUR_USER_DEPLOYMENT>"
+  temperature: 0.3
+  max_completion_tokens: 4096
+  api_version: "2025-04-01-preview"
+  timeout: 600.0

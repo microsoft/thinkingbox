@@ -1,0 +1,47 @@
+
+mcp_proxy:
+  endpoint_url: "https://tbmcp.local"
+  timeout: 300.0
+  trust_ca_path: ~/certs/tbmcp.local.ca.crt
+  geteffects_proxy_info: true
+
+orchestrator:
+  type: botdesigner
+  endpoint_url: "http://host.docker.internal:5000"
+  environment_id: "<YOUR_ENVIRONMENT_ID>"
+  base_bot_id: "<YOUR_BASE_BOT_ID>"
+  connector_endpoint_override: "https://tbmcp.local/connectors"
+  tool_translation_mode: "connector"
+  recognizer_kind: "GenerativeAIRecognizer"
+  use_sse_protocol: false
+  timeout: 300.0
+  feature_overrides: {}
+  bot_variables:
+    agent_name: "Assistant"
+
+judge_model:
+  type: aoai
+  credential:
+    type: az-cli
+  account_name: "<YOUR_AOAI_ACCOUNT>"
+  deployment: "<YOUR_JUDGE_DEPLOYMENT>"
+  temperature: 0.0
+  seed: 42
+  max_completion_tokens: 128
+  api_version: "2025-04-01-preview"
+  timeout: 600.0
+  max_retries_server_error: 5
+  retryable_server_errors: [502, 503, 504, 500, "read-error"]
+
+user_model:
+  type: aoai
+  credential:
+    type: az-cli
+  account_name: "<YOUR_AOAI_ACCOUNT>"
+  deployment: "<YOUR_USER_DEPLOYMENT>"
+  temperature: 0.3
+  max_completion_tokens: 4096
+  api_version: "2025-04-01-preview"
+  timeout: 600.0
+  max_retries_server_error: 5
+  retryable_server_errors: [502, 503, 504, 500, "read-error"]

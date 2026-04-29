@@ -1,0 +1,26 @@
+# Public fallback taxonomy. Loaded by tag_types.py when no deployment-specific
+# tag_taxonomy.yaml is present in this directory. Also the taxonomy the unit
+# tests run against, so the enum members referenced by tests/test_hydrator.py
+# must be present here.
+#
+# Schema:
+#   domain:   mapping of UPPER_SNAKE_CASE member name -> "slug-value"
+#             Each test suite carries a single domain:* tag.
+#   eval:     mapping of UPPER_SNAKE_CASE member name -> "top:sub" string
+#             Two-level hierarchy; at most one eval:* tag per suite.
+#   category: mapping of UPPER_SNAKE_CASE member name -> "slug-value"
+#             Multi-valued; a suite may carry several category:* tags.
+
+domain:
+  CUSTOMER_SERVICE: customer-service
+  HUMAN_RESOURCES: hr
+  MISC: misc
+
+eval:
+  ORCHESTRATION_TOOL_SELECTION: orchestration:tool-selection
+  KNOWLEDGE_QA_TEXT: knowledge-qa:text
+
+category:
+  USER: user
+  XPIA: xpia
+  DIRECT_MSG: direct-msg

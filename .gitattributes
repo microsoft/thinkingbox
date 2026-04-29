@@ -1,0 +1,10 @@
+# Files marked `export-ignore` are tracked in this repo but excluded from the
+# public open-source tree at release time. The release rsync that seeds the
+# public repo honours this same list via --exclude / --exclude-from.
+#
+# `export-ignore` is honoured automatically by `git archive` (and therefore by
+# GitHub's "Download ZIP" button), but has NO effect on `git clone`, `rsync`,
+# or `cp`. Treat this file as a declarative manifest of release-time exclusions;
+# the actual enforcement for the documented release flow is the rsync exclude.
+
+thinkingbox/common/data/tag_taxonomy.yaml export-ignore

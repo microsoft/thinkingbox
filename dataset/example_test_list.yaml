@@ -1,0 +1,4 @@
+# Example test list file for --test-list argument
+# Each entry should be in the format "filename:testname"
+- "banking_email.py:test_transfer_and_sendemail"
+- "mcs_defaults.py:test_mcs_defaults_medium"

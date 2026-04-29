@@ -1,0 +1,70 @@
+world_state:
+  email_system:
+    users:
+      alice@company.com:
+        profile:
+          manager: contact-001
+          phone: 34234-324234
+          email: alice@company.com
+          position: Data Scientist
+        messages:
+          - id: "11111111-aaaa-bbbb-cccc-000000000001"
+            sender: "bob@company.com"
+            to: ["alice@company.com"]
+            cc: []
+            subject: "Weekly Team Meeting"
+            body: "Don't forget about our weekly team meeting tomorrow at 2 PM"
+            sent_at: "2025-05-20T14:00:00Z"
+            folder: "Inbox"
+            read: false
+            attachments: {}
+
+        folders:
+        - {id: inbox, name: Inbox}
+        - {id: sent,  name: Sent}
+
+        events: []
+
+        contacts:
+          - id: "contact-001"
+            name: "Bob Manager"
+            email: "bob@company.com"
+            phone: "555-0101"
+            manager: "contact-002"
+            position: "Team Lead"
+
+          - id: "contact-002"
+            name: "Carol VP"
+            email: "carol@company.com"
+            phone: "555-0102"
+            manager: null
+            position: "Vice President"
+
+          - id: "contact-003"
+            name: "David Developer"
+            email: "david@company.com"
+            phone: "555-0103"
+            manager: "contact-001"
+            position: "Software Developer"
+
+          - id: "contact-004"
+            name: "Eve Engineer"
+            email: "eve@company.com"
+            phone: "555-0104"
+            manager: "contact-001"
+            position: "Software Engineer"
+
+          - id: "contact-005"
+            name: "Frank Frontend"
+            email: "frank@company.com"
+            phone: "555-0105"
+            manager: "contact-001"
+            position: "Frontend Developer"
+
+tools:
+- name: list_contacts
+- name: get_contact
+- name: add_contact
+- name: send_email
+- name: list_emails
+- name: get_user_profile
