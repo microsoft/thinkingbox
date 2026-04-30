@@ -180,7 +180,7 @@ def test_tables_total(x: TestContext, judge: Judge):
 def test_create_config_T1(x: TestContext, judge: Judge):
     """!
     query: |
-        Create a file called service_config.txt in Documents with the content 'host=localhost\nport=8080'
+        Create a file called service_config.txt in Documents with the content 'host=localhost\\nport=8080'
     """
     check_file_content(x, "Documents/service_config.txt", "host=localhost\nport=8080")
     assert judge.text_yesno(
