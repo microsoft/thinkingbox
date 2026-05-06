@@ -876,7 +876,7 @@ def mcp_start(
     bd_connectors: bool,
 ) -> None:
     """
-    Start the MCP server.
+    Start the MCP Session Proxy.
     """
     global app
 

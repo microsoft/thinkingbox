@@ -105,7 +105,7 @@ Commands:
 ### ThinkingBox unit tests
 
 ```bash
-# run the session proxy with the test MPC servers configuration
+# run the session proxy with the test MCP servers configuration
 uv run tb mcp-start --servers tests/servers.yaml
 
 # run the tests
@@ -159,10 +159,10 @@ Single Test
 uv run tb infer -c config/config_o4mini.yaml --dataset ./dataset --agent think --name cloud_drive.py:test_append_some_more_text --no-test --dump tools,testcontext,userllm --output output.yaml
 
 # Run test for cloud_drive.py:test_append_some_more_text on test context output.yaml["test_context"]
-uv run tb run-test -c config/config.yaml --dataset ./dataset --resultfile output.yaml --name cloud_drive.py:test_append_some_more_text --output test_result.yaml
+uv run tb run-test -c config/config_o4mini.yaml --dataset ./dataset --resultfile output.yaml --name cloud_drive.py:test_append_some_more_text --output test_result.yaml
 
 # run test output.yaml["uid"] on test context output.yaml["test_context"] and update output.yaml["test_result"]
-uv run tb run-test -c config/config.yaml --dataset ./dataset --resultfile output.yaml --update
+uv run tb run-test -c config/config_o4mini.yaml --dataset ./dataset --resultfile output.yaml --update
 ```
 
 Multiple Tests
@@ -293,7 +293,7 @@ A test case contains:
 - test code
 
 #### Create YAML of test cases
-You can get a full list of the testcases in a certain file or directory, or of the useful testcases from a benchmarking run jsonl, by using `dataset/utils`
+You can get a full list of the testcases in a certain file or directory, or of the useful testcases from a benchmarking run jsonl, by using the scripts in `scripts/dataset_utils/`.
 
 ## Third-party code
 
