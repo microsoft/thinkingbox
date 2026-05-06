@@ -96,7 +96,7 @@ ToolServerConfigT = Union[MCPProcessConfig, MCPRemoteConfig]
 
 
 class ServersConfig(BaseModel):
-    # whether to automatically add AI.ThinkingBox/thinkingbox/tools/mcp_*.py
+    # whether to automatically add thinkingbox/thinkingbox/tools/mcp_*.py
     use_internal_servers: bool = True
     servers: dict[str, ToolServerConfigT] = Field(default_factory=dict)
 

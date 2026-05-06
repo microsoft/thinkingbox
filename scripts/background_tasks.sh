@@ -5,7 +5,7 @@
 set -e
 
 #######################################################################
-# AI.ThinkingBox Background Tasks Manager
+# ThinkingBox Background Tasks Manager
 #
 # This script manages the background services required for the ThinkingBox
 # AI training environment. It performs the following functions:

@@ -4,7 +4,7 @@ Some tools require additional setup
 
 ## Tools with additional large data files
 
-Some tools require large files that are currently kept in the `AI.ThinkingBox.Data` repository, under `support/`.
+Some tools require large files that are currently kept in the `thinkingbox-data` repository, under `support/`.
 
 Tools:
 - airline_tau_bench
@@ -14,11 +14,11 @@ Tools:
 - universal_search_tool
 
 For these tool to be able to find those files, export the `THINKINGBOX_DATA`
-environment variable pointing to the root of `AI.ThinkingBox.Data`
+environment variable pointing to the root of `thinkingbox-data`
 
 ```bash
-export THINKINGBOX_DATA="/path/to/AI.ThinkingBox.Data"
-cd /path/to/AI.ThinkingBox
+export THINKINGBOX_DATA="/path/to/thinkingbox-data"
+cd /path/to/thinkingbox
 ./scripts/background_tasks.sh
 # or tb mcp-start
 ```
@@ -55,7 +55,7 @@ The indexing script stores full documents (not pre-split snippets) and the searc
 
 ```bash
 # Set environment variables
-cd /path/to/AI.ThinkingBox.Data
+cd /path/to/thinkingbox-data
 
 # Index the documents
 python scripts/create_kb_snapshot.py --collection "search_tool" \
@@ -94,10 +94,10 @@ python -m thinkingbox.tools.toolslib.search_sources --port 8108 --collection sea
 
 **Setup**
 
-Note: this requires the AI.ThinkingBox.Data repository
+Note: this requires the thinkingbox-data repository
 
 ```bash
-cd /path/to/AI.ThinkingBox.Data
+cd /path/to/thinkingbox-data
 
 # download required HF models to ./support/models
 ./scripts/download_hf_models.sh
@@ -106,7 +106,7 @@ cd /path/to/AI.ThinkingBox.Data
 **Run**
 
 ```bash
-cd /path/to/AI.ThinkingBox.Data
+cd /path/to/thinkingbox-data
 
 python -m thinkingbox.services.embeddings_hf_simple --model ./support/models/intfloat/e5-base-v2
 

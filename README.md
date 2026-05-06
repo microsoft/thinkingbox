@@ -28,11 +28,11 @@ ThinkingBox is only tested on Linux. Most of it might work on other systems but 
 Clone this repository
 
 ```bash
-git clone https://github.com/microsoft/AI.ThinkingBox.git
-git clone https://github.com/microsoft/AI.ThinkingBox.Data.git
+git clone https://github.com/microsoft/thinkingbox.git
+git clone https://github.com/microsoft/thinkingbox-data.git
 # OR using GitHub CLI
-gh repo clone microsoft/AI.ThinkingBox
-gh repo clone microsoft/AI.ThinkingBox.Data
+gh repo clone microsoft/thinkingbox
+gh repo clone microsoft/thinkingbox-data
 ```
 
 ### Development Setup

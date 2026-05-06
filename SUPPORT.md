@@ -10,6 +10,6 @@ For help and questions about using this project, please file a GitHub Issue.
 
 ## Microsoft Support Policy
 
-Support for AI.ThinkingBox is limited to the resources listed above. This project is provided
+Support for ThinkingBox is limited to the resources listed above. This project is provided
 on a best-effort basis by the maintainers; there is no service-level agreement and no Microsoft
 Customer Service & Support (CSS) coverage.

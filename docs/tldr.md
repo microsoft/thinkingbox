@@ -37,7 +37,7 @@ ssh-keygen
 Always clone with the SSH address, e.g.
 
 ```bash
-git clone git@github.com:microsoft/AI.ThinkingBox.git
+git clone git@github.com:microsoft/thinkingbox.git
 ```
 
 
@@ -48,23 +48,23 @@ git clone git@github.com:microsoft/AI.ThinkingBox.git
 az login
 
 # Clone TB and tools+data
-git clone git@github.com:microsoft/AI.ThinkingBox.git
-git clone git@github.com:microsoft/AI.ThinkingBox.Data.git
+git clone git@github.com:microsoft/thinkingbox.git
+git clone git@github.com:microsoft/thinkingbox-data.git
 
 # Install TB and tools
-uv venv --python 3.12 AI.ThinkingBox/.venv
-source AI.ThinkingBox/.venv/bin/activate
-uv pip install --config-settings editable-mode=compat -e 'AI.ThinkingBox[dev]'
-uv pip install --config-settings editable-mode=compat -e AI.ThinkingBox.Data/servers/thinkingbox_tools
+uv venv --python 3.12 thinkingbox/.venv
+source thinkingbox/.venv/bin/activate
+uv pip install --config-settings editable-mode=compat -e 'thinkingbox[dev]'
+uv pip install --config-settings editable-mode=compat -e thinkingbox-data/servers/thinkingbox_tools
 
 # start MCP session proxy, leave it running
-THINKINGBOX_DATA="AI.ThinkingBox.Data" tb mcp-start --servers AI.ThinkingBox.Data/servers/servers.yaml
+THINKINGBOX_DATA="thinkingbox-data" tb mcp-start --servers thinkingbox-data/servers/servers.yaml
 
 # NEW TAB. activate venv
-source AI.ThinkingBox/.venv/bin/activate
+source thinkingbox/.venv/bin/activate
 
 # Run a test
-tb infer -c AI.ThinkingBox/config/config_o4mini.yaml --dataset AI.ThinkingBox.Data/dataset --agent think --inputs AI.ThinkingBox.Data/dataset/test_case/banking.py -r 1 -b 10 -o output.jsonl
+tb infer -c thinkingbox/config/config_o4mini.yaml --dataset thinkingbox-data/dataset --agent think --inputs thinkingbox-data/dataset/test_case/banking.py -r 1 -b 10 -o output.jsonl
 
 # show results table
 tb agg --concise output.jsonl
@@ -80,8 +80,8 @@ The example above does not need typesense, but a few other tools need it.
 
 ```bash
 # Install in the virtualenv
-source AI.ThinkingBox/.venv/bin/activate
-AI.ThinkingBox/scripts/install_typesense.sh
+source thinkingbox/.venv/bin/activate
+thinkingbox/scripts/install_typesense.sh
 
 # Start
 mkdir -p /tmp/typesense/data && typesense-server --data-dir="/tmp/typesense/data" --api-key="Fake" --enable-cors

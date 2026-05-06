@@ -6,8 +6,8 @@ and follows a consistent structure for maintainability and ease of integration.
 The tools consist of reusable components to be orchestrated by agentic LLMs using the MCP (Modular Control Protocol) framework, but with added control
 and introspection of effects and state that can be later used in conversation simulation test cases.
 
-All new tools will be expected to be added in the `AI.ThinkingBox.Data` repository under the `servers/thinkingbox_tools/thinkingbox_tools` directory. We keep the tools separate from
-the main engine code to have better separation of concerns and also facilitate paired versioning of tools and tests. See more information in `AI.ThinkingBox.Data/servers/README.md`.
+All new tools will be expected to be added in the `thinkingbox-data` repository under the `servers/thinkingbox_tools/thinkingbox_tools` directory. We keep the tools separate from
+the main engine code to have better separation of concerns and also facilitate paired versioning of tools and tests. See more information in `thinkingbox-data/servers/README.md`.
 
 Follow these steps to add a new tools server:
 
@@ -81,7 +81,7 @@ Follow these steps to add a new tools server:
    - The definition of a state can be done with custom objects declared at the top level of the file. See `mcp_cloud_drive.py` or `mcp_email_system.py` for examples of how to define a state object.
 
 #### 1.1 Add new server to the servers configuration:
-In `AI.ThinkingBox.Data/servers/servers.yaml`, add your new server to the configuration file so it can be made available to the MCP proxy. For example:
+In `thinkingbox-data/servers/servers.yaml`, add your new server to the configuration file so it can be made available to the MCP proxy. For example:
 ```yaml
 use_internal_servers: true
 servers:
@@ -128,7 +128,7 @@ servers:
 
 Small, experimental tools may not require unit tests, but for larger or more complex tools, it's good practice to add unit tests to ensure the tool's functionality is correct and stable down the line.
 
-   - Add unittests for the tools you added in step 5 in `AI.ThinkingBox.Data/servers/thinkingbox_tools/tests` directory (e.g., `AI.ThinkingBox.Data/servers/thinkingbox_tools/tests/test_<your_tool_server_name>_server.py`). See `AI.ThinkingBox.Data/servers/thinkingbox_tools/tests/test_slack_server.py` as an example, including how to handle state.
+   - Add unittests for the tools you added in step 5 in `thinkingbox-data/servers/thinkingbox_tools/tests` directory (e.g., `thinkingbox-data/servers/thinkingbox_tools/tests/test_<your_tool_server_name>_server.py`). See `thinkingbox-data/servers/thinkingbox_tools/tests/test_slack_server.py` as an example, including how to handle state.
    - For the greeting example:
    ```python
    import pytest

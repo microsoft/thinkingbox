@@ -11,7 +11,7 @@ Agentic testing framework for LLM tool-use. Tests **actions** (tool calls) and *
 ## Two Repositories
 
 ```
-AI.ThinkingBox           AI.ThinkingBox.Data
+thinkingbox              thinkingbox-data
 ─────────────────────    ─────────────────────────────
 Framework code           Your scenarios & test cases
 • CLI (tb command)       • dataset/scenario/*.yaml
@@ -20,7 +20,7 @@ Framework code           Your scenarios & test cases
 • Core libraries         • support/ (embeddings, KBs)
 ```
 
-**You write tests in AI.ThinkingBox.Data**, the framework lives in AI.ThinkingBox.
+**You write tests in thinkingbox-data**, the framework lives in thinkingbox.
 
 ## Architecture
 
@@ -115,18 +115,18 @@ Agent LLM sees tool result, continues reasoning
 
 ```bash
 cd ~/src  # or your preferred location
-git clone https://github.com/microsoft/AI.ThinkingBox
-git clone https://github.com/microsoft/AI.ThinkingBox.Data
+git clone https://github.com/microsoft/thinkingbox
+git clone https://github.com/microsoft/thinkingbox-data
 ```
 
 ### 2. Install dependencies
 
 ```bash
-cd AI.ThinkingBox
+cd thinkingbox
 uv venv --python 3.12
 uv sync --group dev
 # This step installs additional MCP tools so they are accessible to the session proxy.
-uv pip install --config-settings editable-mode=compat -e ../AI.ThinkingBox.Data/servers/thinkingbox_tools
+uv pip install --config-settings editable-mode=compat -e ../thinkingbox-data/servers/thinkingbox_tools
 ```
 
 **Check:** `uv run tb --help` shows command list
@@ -142,7 +142,7 @@ az login  # for Azure OpenAI
 ### 4. Set environment variable
 
 ```bash
-export THINKINGBOX_DATA="path/to/AI.ThinkingBox.Data"
+export THINKINGBOX_DATA="path/to/thinkingbox-data"
 ```
 
 **Check:** `echo $THINKINGBOX_DATA` shows the path
@@ -158,11 +158,11 @@ uv run tb mcp-start --servers $THINKINGBOX_DATA/servers/servers.yaml
 ### 6. Run a test (Terminal 2)
 
 ```bash
-cd ~/src/AI.ThinkingBox
+cd ~/src/thinkingbox
 uv run tb infer \
   -c config/config_o4mini.yaml \
   -a think \
-  -d ../AI.ThinkingBox.Data/dataset \
+  -d ../thinkingbox-data/dataset \
   --name banking.py:test_get_balance_savings \
   -o /tmp/output.yaml
 ```
@@ -181,7 +181,7 @@ uv run tb pp /tmp/output.yaml
 
 ## First Task: Modify a Test Case
 
-**Objective:** Change an assertion in `AI.ThinkingBox.Data`, run it, verify it passes.
+**Objective:** Change an assertion in `thinkingbox-data`, run it, verify it passes.
 
 **Acceptance criteria:**
 - [ ] Test passes with modified assertion
@@ -189,7 +189,7 @@ uv run tb pp /tmp/output.yaml
 
 ### Steps
 
-1. Open `AI.ThinkingBox.Data/dataset/test_case/banking.py`
+1. Open `thinkingbox-data/dataset/test_case/banking.py`
 2. Find `test_get_balance_savings`
 3. Note the assertion on `x.effects`
 4. Run the test with TUI to see effects interactively:
@@ -198,7 +198,7 @@ uv run tb pp /tmp/output.yaml
 uv run tb tui \
   -c config/config_o4mini.yaml \
   -a think \
-  -d ../AI.ThinkingBox.Data/dataset \
+  -d ../thinkingbox-data/dataset \
   --name banking.py:test_get_balance_savings
 ```
 
@@ -221,7 +221,7 @@ Tests with `user_context` simulate a user who responds to the agent. The agent a
 uv run tb infer \
   -c config/config_o4mini.yaml \
   -a think \
-  -d ../AI.ThinkingBox.Data/dataset \
+  -d ../thinkingbox-data/dataset \
   --name banking.py:test_transfer_and_balance \
   --dump userllm \
   -o /tmp/userllm_demo.yaml
@@ -253,7 +253,7 @@ def test_transfer_and_balance(x: TestContext, judge: Judge):
 
 ## Command Index
 
-### AI.ThinkingBox (Framework)
+### thinkingbox (Framework)
 
 | Intent | Command |
 |--------|---------|
@@ -267,7 +267,7 @@ def test_transfer_and_balance(x: TestContext, judge: Judge):
 | Run framework tests | `uv run pytest -v tests` |
 | Install pre-commit | `uv run pre-commit install` |
 
-### AI.ThinkingBox.Data (Tests)
+### thinkingbox-data (Tests)
 
 | Intent | Command |
 |--------|---------|
@@ -297,7 +297,7 @@ def test_transfer_and_balance(x: TestContext, judge: Judge):
 |---------|-------|-----|
 | `Port 7111 already in use` | Stale proxy process | `lsof -ti:7111 \| xargs kill` |
 | `ModuleNotFoundError: thinkingbox` | Venv not activated | `uv sync` or `source .venv/bin/activate` |
-| `Scenario not found` | Wrong dataset path | Check `-d` points to `AI.ThinkingBox.Data/dataset` |
+| `Scenario not found` | Wrong dataset path | Check `-d` points to `thinkingbox-data/dataset` |
 | `401 Unauthorized` / timeout | Azure auth expired | Run `az login` |
 | `FileNotFoundError: support/...` | Missing data files | Set `THINKINGBOX_DATA` env var |
 | `Connection refused localhost:7111` | Proxy not running | Start `uv run tb mcp-start` in another terminal |
@@ -309,8 +309,8 @@ def test_transfer_and_balance(x: TestContext, judge: Judge):
 
 ## Where to Get Help
 
-- **Docs:** `AI.ThinkingBox/docs/` - tutorial, test format, debugging
-- **Examples:** `AI.ThinkingBox/dataset/test_case/` - working test cases
+- **Docs:** `thinkingbox/docs/` - tutorial, test format, debugging
+- **Examples:** `thinkingbox/dataset/test_case/` - working test cases
 - **Issues:** File bugs in the GitHub repo
 
 ---
@@ -324,4 +324,4 @@ def test_transfer_and_balance(x: TestContext, judge: Judge):
 | Configure LLM endpoints | [llm_endpoint_config.md](llm_endpoint_config.md) |
 | Tools needing extra setup | [tools_with_additional_setup.md](tools_with_additional_setup.md) |
 | Debug tests in VSCode | [debugging_tests.md](debugging_tests.md) |
-| Organize tests with tags | [AI.ThinkingBox.Data/docs/Adding-tags.md](../../AI.ThinkingBox.Data/docs/Adding-tags.md) |
+| Organize tests with tags | [thinkingbox-data/docs/Adding-tags.md](../../thinkingbox-data/docs/Adding-tags.md) |

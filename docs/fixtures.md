@@ -40,8 +40,8 @@ fixtures:
 
 We recommend you implement fixtures in:
 
-* Fixtures likely to be shared across many MCP servers: `AI.ThinkingBox/thinkingbox/fixtures`
-* Fixtures specific to a particular MCP server: `AI.ThinkingBox.Data/servers/<server-group>/fixtures` (e.g., `.../servers/ms_toloka_servers/fixtures`)
+* Fixtures likely to be shared across many MCP servers: `thinkingbox/thinkingbox/fixtures`
+* Fixtures specific to a particular MCP server: `thinkingbox-data/servers/<server-group>/fixtures` (e.g., `.../servers/ms_toloka_servers/fixtures`)
 
 In either case, include an `__init__.py` that imports the fixture classes/functions and adds them to `__all__`, so they can be referenced by their fully qualified name in the fixture configuration.
 

@@ -179,9 +179,9 @@ Restart the Session Proxy on `https://0.0.0.0:443` with the BotDesigner connecto
 # allow listening on 443
 sudo sysctl net.ipv4.ip_unprivileged_port_start=443
 
-THINKINGBOX_DATA="/path/to/AI.ThinkingBox.Data" \
+THINKINGBOX_DATA="/path/to/thinkingbox-data" \
     tb mcp-start \
-    --servers "/path/to/AI.ThinkingBox.Data/servers/servers.yaml" \
+    --servers "/path/to/thinkingbox-data/servers/servers.yaml" \
     --ssl-pem /path/to/tbmcp.local.pem \
     --host 0.0.0.0 \
     --port 443 \

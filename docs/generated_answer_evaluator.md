@@ -13,7 +13,7 @@ Use `GeneratedAnswerEvaluator` when:
 **See also:**
 - [`fixtures.md`](fixtures.md) — how to wire fixtures via `conftest.yaml` and dependency injection
 - [`rubrics_judge.md`](rubrics_judge.md) — how rubric scoring and rewards are calculated
-- [`AI.ThinkingBox.Data/docs/adding_search_sources_scenario.md`](https://github.com/microsoft/AI.ThinkingBox.Data/blob/main/docs/adding_search_sources_scenario.md) — end-to-end guide for creating a knowledge-QA scenario (including use of this evaluator)/
+- [`thinkingbox-data/docs/adding_search_sources_scenario.md`](https://github.com/microsoft/thinkingbox-data/blob/main/docs/adding_search_sources_scenario.md) — end-to-end guide for creating a knowledge-QA scenario (including use of this evaluator)/
 
 ---
 
@@ -69,8 +69,8 @@ See [`fixtures.md`](fixtures.md) for details on dependency injection.
 
 For the full process of building a knowledge-QA scenario (scenario YAML, collection setup,
 DVC tracking), see
-[`adding_search_sources_scenario.md`](https://github.com/microsoft/AI.ThinkingBox.Data/blob/main/docs/adding_search_sources_scenario.md)
-in AI.ThinkingBox.Data.
+[`adding_search_sources_scenario.md`](https://github.com/microsoft/thinkingbox-data/blob/main/docs/adding_search_sources_scenario.md)
+in thinkingbox-data.
 
 ---
 

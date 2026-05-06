@@ -15,7 +15,7 @@ from thinkingbox.common.utils import CredentialBase
 
 class AzureInteractiveBrowserCredential(CredentialBase):
     r"""
-    Allows obtaining Azure Entra ID tokens by opening a browser window for user login. Before opening the browser window the class will show a descriptive method in the console about the purpose of the authentication (e.g. Azure AI Foundry access or MCP server access). Once authenticated the identity is cached for future use and tokens get refreshed automatically. The cache is stored in the user's local application data folder (e.g. c:\users\<username>\appdata\local\AI.ThinkingBox\AuthRecords for Windows).
+    Allows obtaining Azure Entra ID tokens by opening a browser window for user login. Before opening the browser window the class will show a descriptive method in the console about the purpose of the authentication (e.g. Azure AI Foundry access or MCP server access). Once authenticated the identity is cached for future use and tokens get refreshed automatically. The cache is stored in the user's local application data folder (e.g. c:\users\<username>\appdata\local\ThinkingBox\AuthRecords for Windows).
     """
 
     _logger = logging.getLogger(__name__)
@@ -97,7 +97,7 @@ class AzureInteractiveBrowserCredential(CredentialBase):
     @staticmethod
     def _get_auth_records_path():
         result = AzureInteractiveBrowserCredential._get_local_app_data()
-        result = os.path.join(result, "AI.ThinkingBox")
+        result = os.path.join(result, "ThinkingBox")
         result = os.path.join(result, "AuthRecords")
         os.makedirs(result, exist_ok=True)
 
