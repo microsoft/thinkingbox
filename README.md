@@ -17,15 +17,31 @@ It supports:
 - LLM Agent loop with tool use.
 - Interaction with a simulated (LLM) User that responds based on a prompt with added context.
 
+## Repositories
+
+ThinkingBox is split across two repositories:
+
+- **[thinkingbox](https://github.com/microsoft/thinkingbox)** (this repo) — the
+  framework: the `tb` CLI, the MCP Session Proxy, the agent/user/judge loop,
+  and the evaluation harness. Ships a small built-in example dataset under
+  `./dataset/` so the examples in this README are self-runnable.
+- **[thinkingbox-data](https://github.com/microsoft/thinkingbox-data)** — a
+  larger curated dataset plus the MCP tool server packages (under `servers/`,
+  e.g. `thinkingbox_tools`, `ms_toloka_servers`) and supporting data files
+  (embeddings, knowledge bases, etc.) under `support/`. Optional for trying
+  ThinkingBox out; required for any non-trivial scenarios and for adding new
+  tools.
+
+Most CLI invocations take `--dataset <path>`. Point it at `./dataset` (this
+repo) or at a checkout of `thinkingbox-data/dataset`.
+
 ## Setup
 
 *"Just give me the sequence of commands"* -> [TL;DR](docs/tldr.md)
 
 ThinkingBox is only tested on Linux. Most of it might work on other systems but we only target Linux (including WSL) at the moment.
 
-### Repository
-
-Clone this repository
+### Clone
 
 ```bash
 git clone https://github.com/microsoft/thinkingbox.git
