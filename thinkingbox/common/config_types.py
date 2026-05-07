@@ -203,34 +203,7 @@ class ThinkingBoxOrchestratorConfig(BaseModel):
     agent_model: LLMSessionConfigT
 
 
-BotDesignerToolTranslationMode = Literal["connector", "mcp", "none"]
-BotDesignerRecognizerKind = Literal["GenerativeAIRecognizer", "CLIAgentRecognizer"]
-
-
-class BotDesignerOrchestratorConfig(BaseModel):
-    type: Literal["botdesigner"] = "botdesigner"
-    endpoint_url: str
-    environment_id: str
-    base_bot_id: str
-    feature_overrides: dict[str, Any] | None = None
-    bot_template_file: str | None = None
-    bot_variables: dict[str, Any] = Field(default_factory=dict)
-    locale: str = "en-US"
-    connector_endpoint_override: str | None = None
-    tool_translation_mode: BotDesignerToolTranslationMode = "connector"
-    recognizer_kind: BotDesignerRecognizerKind = "GenerativeAIRecognizer"
-    use_sse_protocol: bool = False
-    credential: CredentialConfigT | None = None
-    client_certificate: str | None = None
-    trust_ca_path: str | None = None
-    headers: dict[str, str] | None = None
-    timeout: float = 60.0
-    use_dns_cache: bool = False
-    max_retries_server_error: int = 5
-    retryable_server_errors: tuple[int | str, ...] = (502, 503)
-
-
-OrchestratorConfigT = ThinkingBoxOrchestratorConfig | BotDesignerOrchestratorConfig
+OrchestratorConfigT = ThinkingBoxOrchestratorConfig
 
 
 class ConfigFile(BaseModel):

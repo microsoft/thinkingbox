@@ -200,7 +200,6 @@ config/*
 # Sample config files (sanitized, safe to track)
 !config/config_anthropic.yaml
 !config/config_apim.yaml
-!config/config_botdesigner.yaml
 !config/config_o4mini.yaml
 !config/config_vllm.yaml
 

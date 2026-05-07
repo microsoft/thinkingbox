@@ -35,7 +35,6 @@ where = ["."]
 include = ["thinkingbox*"]
 
 [tool.setuptools.package-data]
-"thinkingbox.botdesigner" = ["*.yaml"]
 "thinkingbox.common" = ["data/*.yaml"]
 
 [tool.black]

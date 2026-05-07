@@ -859,11 +859,6 @@ def setup_logging():
     default=None,
     help="Path to PEM file containing both SSL certificate and private key for HTTPS.",
 )
-@click.option(
-    "--bd-connectors",
-    is_flag=True,
-    help="Enable BotDesigner connector routes under /connectors/.",
-)
 def mcp_start(
     host: str,
     port: int,
@@ -873,7 +868,6 @@ def mcp_start(
     require_auth: bool,
     api_key: str | None,
     ssl_pem: str | None,
-    bd_connectors: bool,
 ) -> None:
     """
     Start the MCP Session Proxy.
@@ -932,23 +926,7 @@ def mcp_start(
 
             syncify(credential.get_token())
 
-    # Build the app, optionally with BotDesigner connector routes
-    extra_routes = None
-    if bd_connectors:
-        from thinkingbox.tools.botdesigner_connector_proxy import (
-            handle_operation as bd_handle_operation,
-        )
-
-        extra_routes = [
-            Route(
-                "/connectors/{session_id}/{operation_id}",
-                bd_handle_operation,
-                methods=["POST"],
-            ),
-        ]
-        logger.info("BotDesigner connector routes enabled at /connectors/")
-
-    app = create_app(extra_routes=extra_routes)
+    app = create_app()
 
     uvicorn_kwargs: dict[str, Any] = {}
     if ssl_pem:
