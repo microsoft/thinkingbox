@@ -1,5 +1,7 @@
 # How to create new tools for the ThinkingBox project
 
+> **Companion doc:** [`tutorial.md`](tutorial.md) is a hands-on, end-to-end walkthrough that creates a minimal server and progressively builds out a test case (assertions, state, LLM judge, simulated user, debugging). This doc is the production-style reference: it covers the canonical server pattern (custom exception class, success/error response helpers) and the unit-test fixture pattern.
+
 The `thinkingbox/tools` directory contains a server example for the ThinkingBox project. The tool server is implemented as a separate Python module (e.g., `mcp_cloud_drive.py`)
 and follows a consistent structure for maintainability and ease of integration.
 

@@ -40,8 +40,6 @@ dataset format reference.
 
 ## Setup
 
-*"Just give me the sequence of commands"* -> [TL;DR](docs/tldr.md)
-
 ThinkingBox is only tested on Linux. Most of it might work on other systems but we only target Linux (including WSL) at the moment.
 
 ### Clone
@@ -178,8 +176,53 @@ It works as follows:
 - TB sends a destroy request to the Session Proxy, which terminates the
   related MCP servers and releases the memory.
 
-Start it with `tb mcp-start`. The choice of `--servers` controls which tool
-servers are loaded:
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  tb infer (CLI Process)                                                     │
+│  ─────────────────────                                                      │
+│  1. Load config, test case, scenario                                        │
+│  2. Create LLM sessions (agent, user, judge)                                │
+│  3. Connect to session_proxy, create session                                │
+│  4. Run agent loop (decode_turn_iter)                                       │
+│  5. Retrieve effects, run test assertions                                   │
+└──────┬─────────────────────────────────────┬────────────────────────────────┘
+       │                                     │
+       │ LLM API calls                       │ HTTP to session_proxy
+       │ (agent reasoning,                   │ (tool calls, effects)
+       │  user simulation,                   │
+       │  judge evaluation)                  │
+       ▼                                     ▼
+┌──────────────────┐              ┌─────────────────────────────────────────┐
+│  Azure OpenAI    │              │  session_proxy (:7111)                  │
+│  or Anthropic    │              │  ─────────────────────                  │
+│                  │              │  POST /session_create  → spawn servers  │
+│  - Agent LLM     │              │  POST /list_tools      → get schemas    │
+│  - User LLM      │              │  POST /call_tool       → execute tool   │
+│  - Judge LLM     │              │  POST /get_effects     → retrieve state │
+└──────────────────┘              │  POST /session_destroy → cleanup        │
+                                  └──────────────────┬──────────────────────┘
+                                                     │
+                                                     │ stdio (JSON-RPC)
+                                                     │ one process per server
+                                                     ▼
+                                  ┌─────────────────────────────────────────┐
+                                  │  MCP Server Processes                   │
+                                  │  ───────────────────                    │
+                                  │  mcp_cloud_drive.py    → file storage   │
+                                  │  mcp_online_banking.py → account state  │
+                                  │  mcp_email_system.py   → sent emails    │
+                                  │  mcp_ms_store.py       → store FAQ      │
+                                  │  ... (more in thinkingbox-data)         │
+                                  │                                         │
+                                  │  Each server has:                       │
+                                  │  - __reserved__init (setup state)       │
+                                  │  - tool functions (get_accounts, etc)   │
+                                  │  - __reserved__geteffects (for testing) │
+                                  └─────────────────────────────────────────┘
+```
+
+Start the Session Proxy with `tb mcp-start`. The choice of `--servers`
+controls which tool servers are loaded:
 
 ```bash
 # Auto-discover the bundled servers under thinkingbox/tools/mcp_*.py
@@ -193,6 +236,35 @@ uv run tb mcp-start --servers ../thinkingbox-data/servers/servers.yaml
 Some tools require additional setup (running services, the
 `THINKINGBOX_DATA` environment variable for support files). See
 [Tools with additional setup](docs/tools_with_additional_setup.md).
+
+#### Data flow: a single tool call
+
+```
+Agent LLM returns: ToolCall(name="get_accounts", args={})
+        │
+        ▼
+decode_turn_iter() calls mcp_proxy.call_tool("get_accounts", {})
+        │
+        ▼
+MCPProxyClient POST /call_tool ──► session_proxy
+        │                                 │
+        │                                 ▼
+        │                         ToolDispatcher routes to server
+        │                                 │
+        │                                 ▼
+        │                         mcp_online_banking (JSON-RPC)
+        │                                 │
+        │                                 ▼
+        │                         get_accounts() executes
+        │                                 │
+        ◄─────────────────────────────────┘
+        │                         result: '{"accounts": [...]}'
+        ▼
+ToolResponse added to conversation, yielded
+        │
+        ▼
+Agent LLM sees tool result, continues reasoning
+```
 
 ### LLM Configuration
 
@@ -263,6 +335,47 @@ uv run tb agg input_file.jsonl
 # or (for a subset of results)
 cat input_file.jsonl | grep "<SOME FILTER>" | uv run tb agg
 ```
+
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `Port 7111 already in use` | Stale proxy process | `lsof -ti:7111 \| xargs kill` |
+| `ModuleNotFoundError: thinkingbox` | Venv not activated | `uv sync` or `source .venv/bin/activate` |
+| `Scenario not found` | Wrong dataset path | Check `-d` points to `../thinkingbox-data/dataset` |
+| `401 Unauthorized` / timeout | Azure auth expired | Run `az login` |
+| `FileNotFoundError: support/...` | Missing data files | Set `THINKINGBOX_DATA` env var |
+| `Connection refused localhost:7111` | Proxy not running | Start `uv run tb mcp-start` in another terminal |
+| `test_case not found` | Typo in test name | Format is `filename.py:function_name` |
+| TUI: can't submit message | Wrong key combo | Press **ESC** then **Enter** (not just Enter) |
+| Pre-commit fails | Formatting issues | Run `uv run pre-commit run --all-files` |
+
+## Documentation
+
+Deeper references for specific topics live under [`docs/`](docs/):
+
+**Tutorials and authoring**
+- [`tutorial.md`](docs/tutorial.md) — End-to-end walkthrough: create a server, a scenario, and a test case, then progressively add assertions, state, the LLM judge, the simulated user, and debugging.
+- [`adding_tools.md`](docs/adding_tools.md) — Production-grade pattern for new MCP tools (custom exception class, success/error helpers, unit-test fixture).
+- [`test_case_format.md`](docs/test_case_format.md) — Python and YAML test-case formats; full field reference.
+- [`writing_effective_tests.md`](docs/writing_effective_tests.md) — How to write tests that produce useful signal for evaluation and RL training.
+- [`test_cases_deep_dive.md`](docs/test_cases_deep_dive.md) — Deeper examples and patterns for test-case authoring.
+- [`history_and_metadata.md`](docs/history_and_metadata.md) — Multi-turn test cases with prior conversation history loaded from a companion `.meta.yaml`.
+- [`debugging_tests.md`](docs/debugging_tests.md) — How to debug a failing test (VSCode launch configs and friends).
+
+**Fixtures and judges**
+- [`fixtures.md`](docs/fixtures.md) — How fixtures are wired up (dependency injection via `conftest.yaml` and scenario overrides).
+- [`rubrics_judge.md`](docs/rubrics_judge.md) — Rubric Judge: design, scoring, and how rewards are calculated.
+- [`generated_answer_evaluator.md`](docs/generated_answer_evaluator.md) — `GeneratedAnswerEvaluator` fixture for knowledge-QA / RAG test cases.
+
+**Configuration**
+- [`llm_endpoint_config.md`](docs/llm_endpoint_config.md) — Configuring LLM endpoints (Azure OpenAI, OpenAI-compatible, Anthropic).
+- [`session_proxy_config.md`](docs/session_proxy_config.md) — Session Proxy configuration file (`servers.yaml`, auth, GC).
+- [`scenario_tools_config.md`](docs/scenario_tools_config.md) — Tools list and per-tool overrides inside a scenario YAML.
+- [`prompts.md`](docs/prompts.md) — How system, user-LLM, and judge prompts are constructed.
+
+**Operations**
+- [`tools_with_additional_setup.md`](docs/tools_with_additional_setup.md) — Tools that require extra setup (Typesense, embeddings server, the `THINKINGBOX_DATA` env var).
 
 
 # Configuration and dataset
