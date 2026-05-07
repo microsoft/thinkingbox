@@ -23,17 +23,20 @@ ThinkingBox is split across two repositories:
 
 - **[thinkingbox](https://github.com/microsoft/thinkingbox)** (this repo) — the
   framework: the `tb` CLI, the MCP Session Proxy, the agent/user/judge loop,
-  and the evaluation harness. Ships a small built-in example dataset under
-  `./dataset/` so the examples in this README are self-runnable.
-- **[thinkingbox-data](https://github.com/microsoft/thinkingbox-data)** — a
-  larger curated dataset plus the MCP tool server packages (under `servers/`,
-  e.g. `thinkingbox_tools`, `ms_toloka_servers`) and supporting data files
-  (embeddings, knowledge bases, etc.) under `support/`. Optional for trying
-  ThinkingBox out; required for any non-trivial scenarios and for adding new
-  tools.
+  and the evaluation harness. Ships a single bundled scenario (`cloud_drive`)
+  and its matching MCP server (`mcp_cloud_drive.py`) only as an offline
+  smoke-test for an install — see [Verify install](#verify-install).
+- **[thinkingbox-data](https://github.com/microsoft/thinkingbox-data)** — the
+  curated datasets, the MCP tool server packages (under `servers/`, e.g.
+  `thinkingbox_tools`, `ms_toloka_servers`), and supporting data files
+  (embeddings, knowledge bases, etc.) under `support/`. This is where real
+  scenarios, test cases, and tools live; clone it for any non-trivial work.
 
-Most CLI invocations take `--dataset <path>`. Point it at `./dataset` (this
-repo) or at a checkout of `thinkingbox-data/dataset`.
+For tutorial-style worked examples (running scenarios, batch evaluation,
+interactive chat against real datasets), see the
+[thinkingbox-data README](https://github.com/microsoft/thinkingbox-data#readme).
+This README focuses on the framework itself — install, architecture, and
+dataset format reference.
 
 ## Setup
 
@@ -96,9 +99,9 @@ uv run pre-commit run
 uv run pre-commit run --all-files
 ```
 
-### Running ThinkingBox
+### CLI overview
 
-All actions in ThinkingBox can be accessed by one command: `tb`.
+All actions in ThinkingBox are accessed through one command: `tb`.
 
 ```bash
 > uv run tb --help
@@ -111,12 +114,37 @@ Commands:
   agg         Aggregate metrics from a JSONL file.
   dump-tests  Dump test cases for a given agent and dataset.
   infer       Execute inference for a single test or set of tests.
-  mcp-start   Start the MCP server.
+  mcp-start   Start the MCP Session Proxy.
   pp          Pretty-print a decoded result from a file or stdin.
   run-test    Process decoder results and optionally update or write new...
   sbs         Compare candidate vs baseline JSONL results and report lift...
   tui         Launch the ThinkingBox TUI for a single test case or a...
 ```
+
+### Verify install
+
+The framework ships a single offline scenario, `cloud_drive`, so you can
+sanity-check the install without cloning `thinkingbox-data` first.
+
+In one terminal, start the Session Proxy with no `--servers` flag —
+auto-discovery picks up the bundled `mcp_cloud_drive` server:
+
+```bash
+uv run tb mcp-start
+```
+
+In another terminal, run a single bundled test:
+
+```bash
+uv run tb infer -c config/config_o4mini.yaml --dataset ./dataset --agent think \
+    --name cloud_drive.py:test_append_some_more_text --output output.yaml
+uv run tb pp output.yaml
+```
+
+If `tb pp` shows a conversation and the assertions pass, the framework and
+your LLM endpoint are wired up. For real scenarios, datasets, and tool
+servers, see the
+[thinkingbox-data README](https://github.com/microsoft/thinkingbox-data#readme).
 
 ### ThinkingBox unit tests
 
@@ -128,93 +156,77 @@ uv run tb mcp-start --servers tests/servers.yaml
 uv run pytest -v tests
 ```
 
-## Run
+## Architecture
+
+This section describes the framework's runtime pieces and their CLI-level
+controls. For tutorial-style worked examples, see the
+[thinkingbox-data README](https://github.com/microsoft/thinkingbox-data#readme).
 
 ### MCP Session Proxy
 
-ThinkingBox uses the MCP Session Proxy to interact with tools.
+ThinkingBox interacts with tools through the **MCP Session Proxy** — a
+long-running HTTP server that fronts a fleet of MCP tool processes.
 
 It works as follows:
-- TB sends a "scenario" initialization to the Session Proxy, which spawns and initializes MCP servers as needed, creating a new isolated "session" for the current conversation.
+- TB sends a "scenario" initialization to the Session Proxy, which spawns and
+  initializes MCP servers as needed, creating a new isolated "session" for
+  the current conversation.
 - TB requests tool schemas from the Session Proxy.
 - TB interacts with tools by sending requests to the Session Proxy.
-- TB retrieves side effects from the Session Proxy for judging. This could be any change occurring within the session resulting from tool execution.
-- TB sends a destroy request to the Session Proxy, which terminates the related MCP servers and releases the memory.
+- TB retrieves side effects from the Session Proxy for judging. This could be
+  any change occurring within the session resulting from tool execution.
+- TB sends a destroy request to the Session Proxy, which terminates the
+  related MCP servers and releases the memory.
 
-The Session Proxy must be running while using `uv run tb mcp-start`.
+Start it with `tb mcp-start`. The choice of `--servers` controls which tool
+servers are loaded:
 
 ```bash
-# Run the session server on 127.0.0.1:7111 (default)
+# Auto-discover the bundled servers under thinkingbox/tools/mcp_*.py
+# (only mcp_cloud_drive — useful for the smoke test, nothing else)
 uv run tb mcp-start
+
+# Real workloads: point at thinkingbox-data's master servers config
+uv run tb mcp-start --servers ../thinkingbox-data/servers/servers.yaml
 ```
 
-Note: some tools require additional setup:
-- additional running services
-- setting environment variable `THINKINGBOX_DATA` for additional data files.
-
-Check [Tools with additional setup](docs/tools_with_additional_setup.md)
-
-Tools that appear in the examples in this repository (in `./dataset`) do not require any additional setup.
-
+Some tools require additional setup (running services, the
+`THINKINGBOX_DATA` environment variable for support files). See
+[Tools with additional setup](docs/tools_with_additional_setup.md).
 
 ### LLM Configuration
 
 See [LLM Endpoint Configuration](docs/llm_endpoint_config.md) for all the options.
 
-If using Azure OpenAI endpoint, log in with azure-cli (`az login`) and configure some endpoints you have access to in the main configuration file. Check the example in `config/config_o4mini.yaml`.
+If using Azure OpenAI endpoint, log in with azure-cli (`az login`) and
+configure some endpoints you have access to in the main configuration file.
+Check the example in `config/config_o4mini.yaml`.
 
-If using OpenAI-Compatible deployments, check the example in `config/config_vllm.yaml`.
-
-
-### Decode and Test
-
-Single Test
-
-```bash
-# Decode one specific case, do not test, dump tools, test context (incl side effects), User-LLM queries
-uv run tb infer -c config/config_o4mini.yaml --dataset ./dataset --agent think --name cloud_drive.py:test_append_some_more_text --no-test --dump tools,testcontext,userllm --output output.yaml
-
-# Run test for cloud_drive.py:test_append_some_more_text on test context output.yaml["test_context"]
-uv run tb run-test -c config/config_o4mini.yaml --dataset ./dataset --resultfile output.yaml --name cloud_drive.py:test_append_some_more_text --output test_result.yaml
-
-# run test output.yaml["uid"] on test context output.yaml["test_context"] and update output.yaml["test_result"]
-uv run tb run-test -c config/config_o4mini.yaml --dataset ./dataset --resultfile output.yaml --update
-```
-
-Multiple Tests
-
-```bash
-# Decode multiple cases from a file or directory, run tests as well, dump raw messages
-uv run tb infer -c config/config_o4mini.yaml --dataset ./dataset --agent think --inputs dataset/test_case/cloud_drive.py --repeat 4 --dump raw --output output.jsonl
-```
-
+If using OpenAI-Compatible deployments, check the example in
+`config/config_vllm.yaml`.
 
 ### Interactive TUI
 
-Start an interactive session to chat with a scenario or a test case.
+`tb tui` launches an interactive session to chat with a scenario or a test
+case. See the
+[thinkingbox-data README](https://github.com/microsoft/thinkingbox-data#readme)
+for invocation examples; this section covers the TUI's UX details.
 
-**IMPORTANT: Use ESC then ENTER to submit a message, or just ENTER for newline. This is necessary for multiline input.**
+**IMPORTANT: Use ESC then ENTER to submit a message, or just ENTER for
+newline. This is necessary for multiline input.**
 
-*Note: check the prompt_toolkit documentation for more information, our instructions are Linux-specific and other platforms have different key bindings.*
+*Note: check the prompt_toolkit documentation for more information, our
+instructions are Linux-specific and other platforms have different key
+bindings.*
 
-
-```bash
-# chat with a scenario
-uv run tb tui -c config/config_o4mini.yaml --dataset ./dataset --agent think --scenario cloud_drive --query "Please list all the files"
-
-# chat with a test case but don't send the query
-uv run tb tui -c config/config_o4mini.yaml --dataset ./dataset --agent think --name cloud_drive.py:test_append_some_more_text --query ""
-```
-
-When prompted with `[user::text]`, provide a user response, or one of the special commands starting with `/`.
-
-Commands:
+When prompted with `[user::text]`, provide a user response, or one of the
+special commands starting with `/`:
 
 ```
 # run a test from file
-/test dataset/test_case/cloud_drive.py:test_append_some_more_text
+/test dataset/test_case/<file>.py:<testname>
 
-# or if chatting with a test case (--name), to execute its associated test, just run
+# or if chatting with a test case (--name), execute its associated test
 /test
 
 # show tool definition
@@ -230,9 +242,10 @@ Commands:
 /quit
 ```
 
-### Decoding result visualization and testset aggregation
+### Inspecting and aggregating results
 
-Print individual conversations with nice formatting for visual inspection, from the JSONL or YAML output of `tb infer`, by running:
+Pretty-print individual conversations from the JSONL or YAML output of
+`tb infer`:
 
 ```bash
 uv run tb pp input_file.yaml
@@ -241,7 +254,8 @@ uv run tb pp input_file.yaml
 head -n1 input_file.jsonl | uv run tb pp
 ```
 
-Aggregate results and statistics into a table summary, from the JSONL output of `tb infer`, by running:
+Aggregate results and statistics into a table summary from the JSONL output
+of `tb infer`:
 
 ```bash
 uv run tb agg input_file.jsonl
@@ -272,8 +286,6 @@ Schema: `config_types.py:AgentConfig`
 
 Location: `<dataset>/agent/<agent>.yaml`
 
-`--dataset ./dataset --agent think` selects file `./dataset/agent/think.yaml`
-
 Contains the agent prompts and configuration.
 
 
@@ -282,8 +294,6 @@ Contains the agent prompts and configuration.
 Schema: `config_types.py:ScenarioConfig`
 
 Location: `<dataset>/scenario/<scenario>.yaml`
-
-`--dataset ./dataset` + `scenario: cloud_drive` selects file `./dataset/scenario/cloud_drive.yaml`
 
 Contains the scenario configuration:
 - initial state for each server
@@ -296,8 +306,6 @@ Contains the scenario configuration:
 Schema: `config_types.py:TestCase`
 
 Location: `<dataset>/test_case/<test_cases_file>`
-
-`--dataset ./dataset --name cloud_drive.py:test_delete` selects `test_delete` in `./dataset/test_case/cloud_drive.py` or `./dataset/test_case/cloud/cloud_drive.py`
 
 A test case file contains multiple test cases. There are 2 possible equivalent formats:
 - python format: described in `python_test_file.py`
