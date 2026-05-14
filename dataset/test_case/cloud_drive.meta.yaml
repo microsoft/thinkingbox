@@ -1,0 +1,26 @@
+$history:
+  create_then_update_config:
+    - T: Text
+      message_id: t1
+      role: user
+      content: "Create a file called service_config.txt in Documents with the content 'host=localhost\nport=8080'"
+    - T: ParallelToolCall
+      metadata: {}
+      tool_calls:
+        - T: ToolCall
+          name: upload_file
+          arguments:
+            path: Documents/service_config.txt
+            text_content: "host=localhost\nport=8080"
+            overwrite: false
+          id: call_config_001
+    - T: ToolResponse
+      name: upload_file
+      content: '{"status": "ok"}'
+      id: call_config_001
+    - T: Text
+      metadata:
+        tag: text
+        is_done: true
+      role: assistant
+      content: "Done, I've created service_config.txt in Documents with the specified configuration. <DONE>"

@@ -1,0 +1,20 @@
+# Ignore build directories
+build/
+dist/
+*.egg-info/
+
+# Ignore cache directories
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+
+# Ignore virtual environments
+venv/
+.venv/
+
+# Ignore data files
+data/
+dataset/
+
+# Ignore configuration files that might have specific formatting
+config/

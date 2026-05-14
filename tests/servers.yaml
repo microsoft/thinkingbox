@@ -1,0 +1,23 @@
+use_internal_servers: false
+servers:
+  test_tool_http:
+    type: mcp-remote
+    endpoint: http://127.0.0.1:10611/mcp/
+    transport: streamable-http
+  test_tool_sse:
+    type: mcp-remote
+    endpoint: http://127.0.0.1:10611/sse
+    transport: sse
+  test_tool_process:
+    type: mcp-process
+    env:
+      TEST_TOOL: "hello"
+    cwd: "tests"
+    command: ["{python}", "mcp_test_tool.py", "--transport", "stdio"]
+  cloud_drive:
+    type: mcp-process
+    command: ["{python}", "-m", "thinkingbox.tools.mcp_cloud_drive"]
+  test_notepad:
+    type: mcp-process
+    cwd: "tests"
+    command: ["{python}", "mcp_test_notepad.py"]

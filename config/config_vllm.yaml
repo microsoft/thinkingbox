@@ -1,0 +1,38 @@
+mcp_proxy:
+  endpoint_url: "http://127.0.0.1:7111"
+  timeout: 300.0
+
+orchestrator:
+  type: thinkingbox
+  agent_model:
+    # OpenAI-Compatible Chat Completions, DeepSeek style reasoning_content
+    type: aoai
+    deployment: "model"  # served model name
+    endpoint_url: "http://127.0.0.1:8000/v1/chat/completions"
+    is_reasoning: true
+    temperature: 1.0
+    max_completion_tokens: 4096
+    timeout: 600.0
+
+judge_model:
+  # OpenAI-Compatible Chat Completions
+  type: aoai
+  deployment: "model"  # served model name
+  endpoint_url: "http://127.0.0.1:8001/v1/chat/completions"
+  is_reasoning: false
+  temperature: 0.0
+  seed: 42
+  max_completion_tokens: 128
+  timeout: 600.0
+
+judge_type: "legacy" # "motivation"
+
+user_model:
+  # OpenAI-Compatible Chat Completions
+  type: aoai
+  deployment: "model"  # served model name
+  endpoint_url: "http://127.0.0.1:8001/v1/chat/completions"
+  is_reasoning: false
+  temperature: 0.0
+  max_completion_tokens: 4096
+  timeout: 600.0
