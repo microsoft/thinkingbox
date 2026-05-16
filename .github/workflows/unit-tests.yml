@@ -1,0 +1,54 @@
+name: Unit Tests
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  unit-tests:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: 3.12
+          enable-cache: true
+
+      - name: Install dependencies
+        run: |
+          uv sync --group dev
+
+      - name: Start thinkingbox-mcp-server
+        run: |
+          source .venv/bin/activate
+          tb mcp-start --servers tests/servers.yaml &
+          echo $! > server.pid
+          sleep 5  # Give server time to start
+
+          # Verify server is running
+          for i in {1..20}; do
+            status_code=$(curl -s -o /dev/null -w "%{http_code}" -d '{}' http://127.0.0.1:7111/session_destroy_all)
+            if [ "$status_code" = "200" ]; then
+              echo "Server is running"
+              break
+            fi
+            echo "Waiting for server to start... (attempt $i)"
+            sleep 6
+          done
+
+      - name: Run unit tests
+        run: |
+          uv run pytest tests/ -v
+
+      - name: Stop thinkingbox-mcp-server
+        if: always()
+        run: |
+          if [ -f server.pid ]; then
+            kill $(cat server.pid) || true
+            rm server.pid
+          fi
