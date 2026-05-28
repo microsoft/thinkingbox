@@ -102,6 +102,35 @@ cleanup() {
 # Set up trap for cleanup
 trap cleanup EXIT INT TERM
 
+# Start typesense-server if not already running
+if is_process_running "typesense-server"; then
+    echo "typesense-server is already running with PID: $(get_process_pid 'typesense-server')"
+else
+    mkdir -p /tmp/typesense
+    echo "$TYPESENSE_API_KEY" > /tmp/typesense/.api_key
+    mkdir -p /tmp/typesense/data
+    echo "Starting typesense-server..."
+    typesense-server --data-dir="/tmp/typesense/data" --api-key="$TYPESENSE_API_KEY" --enable-cors > "$TYPESENSE_LOG" 2>&1 &
+    TYPESENSE_WE_STARTED=1
+    echo "typesense-server started with PID: $!"
+fi
+
+# Wait for typesense /health to return 200 before starting mcp-start.
+# Cold start can take minutes while embedder models load; mcp-start sessions
+# that hit Typesense before it's ready will 503 their way to session failure.
+echo "Waiting for typesense-server to become ready..."
+for _ in $(seq 1 150); do
+    if curl -sf http://localhost:8108/health >/dev/null 2>&1; then
+        echo "typesense-server is ready."
+        break
+    fi
+    sleep 2
+done
+if ! curl -sf http://localhost:8108/health >/dev/null 2>&1; then
+    echo "typesense-server did not become ready within 5 minutes; aborting."
+    exit 1
+fi
+
 # Start tb mcp-start if not already running
 if is_process_running "tb mcp-start"; then
     echo "tb mcp-start is already running with PID: $(get_process_pid 'tb mcp-start')"
@@ -127,20 +156,6 @@ fi
 # Start tailing the MCP log
 tail -f "$MCP_LOG" &
 MCP_TAIL_PID=$!
-
-
-# Start typesense-server if not already running
-if is_process_running "typesense-server"; then
-    echo "typesense-server is already running with PID: $(get_process_pid 'typesense-server')"
-else
-    mkdir -p /tmp/typesense
-    echo "$TYPESENSE_API_KEY" > /tmp/typesense/.api_key
-    mkdir -p /tmp/typesense/data
-    echo "Starting typesense-server..."
-    typesense-server --data-dir="/tmp/typesense/data" --api-key="$TYPESENSE_API_KEY" --enable-cors > "$TYPESENSE_LOG" 2>&1 &
-    TYPESENSE_WE_STARTED=1
-    echo "typesense-server started with PID: $!"
-fi
 
 echo "All processes are running. Press Ctrl+C to stop."
 
