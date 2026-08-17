@@ -362,6 +362,7 @@ Deeper references for specific topics live under [`docs/`](docs/):
 - [`test_cases_deep_dive.md`](docs/test_cases_deep_dive.md) — Deeper examples and patterns for test-case authoring.
 - [`history_and_metadata.md`](docs/history_and_metadata.md) — Multi-turn test cases with prior conversation history loaded from a companion `.meta.yaml`.
 - [`debugging_tests.md`](docs/debugging_tests.md) — How to debug a failing test (VSCode launch configs and friends).
+- [`analyzing_results.md`](docs/analyzing_results.md) — The `tb infer` JSONL artifact and `tb agg`/`tb pp`/`tb run-test`/`tb sbs` workflow: schema reference, pass@1/pass@20/pass^20 metrics aligned with the ThinkingBox paper, domain filtering, and manual failure-category triage.
 
 **Fixtures and judges**
 - [`fixtures.md`](docs/fixtures.md) — How fixtures are wired up (dependency injection via `conftest.yaml` and scenario overrides).
