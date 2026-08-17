@@ -5,7 +5,7 @@ on:
   schedule:
     - cron: '17 4 * * 1'  # Mondays 04:17 UTC
   push:
-    branches: [main]
+    branches: [main, ltsai-microsoft-fix-scorecard-github-token]
 
 permissions: read-all
 
@@ -16,7 +16,9 @@ jobs:
     permissions:
       security-events: write
       contents: read
-      actions: read
+      issues: read
+      pull-requests: read
+      checks: read
 
     steps:
       - uses: actions/checkout@v6
@@ -24,18 +26,11 @@ jobs:
           persist-credentials: false
 
       - name: Run analysis
-        uses: ossf/scorecard-action@v2.4.3
+        uses: ossf/scorecard-action@v2.4.4
         with:
           results_file: results.sarif
           results_format: sarif
           publish_results: false
-          # Required for private repos. The default GITHUB_TOKEN lacks
-          # GraphQL access to commits/contributors/branch-protection on
-          # private repos. SCORECARD_TOKEN must be a fine-grained PAT with
-          # read-only Actions/Administration/Contents/Issues/Metadata/PRs/Webhooks
-          # scope on this repo. Remove this line after the repo goes public
-          # (the default GITHUB_TOKEN works fine on public repos).
-          repo_token: ${{ secrets.SCORECARD_TOKEN }}
 
       - name: Upload SARIF to Security tab
         uses: github/codeql-action/upload-sarif@v4
