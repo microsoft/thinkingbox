@@ -1,0 +1,45 @@
+name: Validate Scorecard token
+
+on:
+  push:
+    branches: [ltsai-microsoft-fix-scorecard-github-token]
+
+permissions: read-all
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+      checks: read
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Run Scorecard container against main
+        env:
+          INPUT_REPO_TOKEN: ${{ github.token }}
+          INPUT_INTERNAL_DEFAULT_TOKEN: ${{ github.token }}
+        run: |
+          docker run --rm \
+            --volume "$GITHUB_WORKSPACE:/github/workspace" \
+            --workdir /github/workspace \
+            --env INPUT_REPO_TOKEN \
+            --env INPUT_INTERNAL_DEFAULT_TOKEN \
+            --env INPUT_RESULTS_FILE=results.sarif \
+            --env INPUT_RESULTS_FORMAT=sarif \
+            --env INPUT_PUBLISH_RESULTS=false \
+            --env GITHUB_EVENT_NAME=branch_protection_rule \
+            --env GITHUB_REF=refs/heads/main \
+            --env GITHUB_REF_NAME=main \
+            --env GITHUB_REPOSITORY \
+            --env GITHUB_SHA \
+            --env GITHUB_WORKSPACE=/github/workspace \
+            ghcr.io/ossf/scorecard-action:v2.4.4
+
+      - name: Verify SARIF output
+        run: test -s results.sarif
