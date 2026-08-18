@@ -436,6 +436,36 @@ You can get a full list of the testcases in a certain file or directory, or of t
 
 This repository does not vendor third-party source code. All runtime and development dependencies are declared in `pyproject.toml` / `uv.lock` and installed from public package indexes (PyPI). Each dependency retains its own license.
 
+## Acknowledgments
+
+ThinkingBox began in a private repository and was widely used by a group of
+developers and scientists working on agentic reinforcement learning for
+Microsoft Copilot Studio before becoming an open source project.
+
+### Special recognition
+
+- [Nicola Ferri](https://github.com/s91323) initiated the project, led its
+  early ideation and design, and developed the core ThinkingBox framework.
+
+### Contributors
+
+We also thank the following developers from the Microsoft Copilot Studio RL
+team:
+
+- [Aaron Dunlop](https://github.com/aarondunlopms)
+- [Anuar Sharafudinov](https://github.com/Mega4alik)
+- [Calvin Wang](https://github.com/calvinwang15)
+- Cosmin Popovici
+- [Ezra Story](https://github.com/ezrastory-msft)
+- [Kjartan Ólafsson](https://github.com/kjolafss)
+- [Liang-Chun Tsai](https://github.com/ltsai-microsoft)
+- [Mirco Milletari](https://github.com/WessZumino)
+- [Srinidhi Raghavan](https://github.com/SrinidhiRaghavan)
+- [Susana Palmaz Lopez Pelaez](https://github.com/susana-palmaz)
+- [Tommy Guy](https://github.com/guyrt)
+- [Tuhin Kundu](https://github.com/TuhinKundu)
+- [Vadim Smolyakov](https://github.com/vasmolya-msft)
+
 ## Trademarks
 
 This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft trademarks or logos is subject to and must follow [Microsoft's Trademark & Brand Guidelines](https://www.microsoft.com/en-us/legal/intellectualproperty/trademarks/usage/general). Use of Microsoft trademarks or logos in modified versions of this project must not cause confusion or imply Microsoft sponsorship. Any use of third-party trademarks or logos are subject to those third-party's policies.
