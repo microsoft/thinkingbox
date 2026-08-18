@@ -274,6 +274,7 @@ class SessionProxyMiddleware(FastMCPMiddleware):
                 if isinstance(parsed, dict):
                     structured = parsed
             except (AttributeError, IndexError, ValueError, TypeError):
+                # Non-JSON text content remains available in the original result.
                 pass
 
         return ToolResult(content=result.content, structured_content=structured)
@@ -523,10 +524,7 @@ async def _session_create_inner(data: SessionCreateRequest) -> ServerResponse:
         # one from propagating to the response
 
         async with sessions_lock:
-            try:
-                del sessions[data.session_id]
-            except KeyError:
-                pass
+            sessions.pop(data.session_id, None)
 
         try:
             await new_session.destroy()
@@ -671,8 +669,8 @@ async def _destroy_inactive_sessions(minutes: float) -> list[str]:
             continue
         try:
             await s.destroy()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error destroying expired session %s: %s", s_id, e)
 
     # return ids of destroyed sessions
     return [s_id for (s_id, _) in to_destroy]

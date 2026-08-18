@@ -95,7 +95,6 @@ class TBWorker(Worker[HydratedTestCase, DecodeResult]):
                 )
                 return WorkResult(result=previous_result, is_correct=is_correct)
 
-        result, error = None, None
         start_time = time.time()
         timers = Timers()
         timers.ensure("time_agent")

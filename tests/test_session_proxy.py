@@ -70,6 +70,7 @@ async def wait_for_mcp_server(
                 _ = await client.list_tools()
             return
         except Exception:
+            # Connection failures are expected until the proxy is ready.
             pass
         if time.time() >= deadline:
             raise RuntimeError(f"Timeout trying to connect to {url}")
@@ -313,7 +314,8 @@ async def session_proxy_process(port: int, api_key: str):
                     r = await client.get(f"http://127.0.0.1:{port}/health")
                     if r.status_code == 200:
                         break
-            except Exception:
+            except httpx.HTTPError:
+                # Connection failures are expected until the proxy is ready.
                 pass
             if time.time() >= deadline:
                 raise RuntimeError("Timeout waiting for session proxy to start")
@@ -328,11 +330,11 @@ async def session_proxy_process(port: int, api_key: str):
             await asyncio.wait_for(proc.wait(), timeout=5)
 
 
-def assert_http_status_unauthorized_in_exception_group(exc: BaseException):
+def assert_http_status_unauthorized_in_exception_group(exc: Exception):
     if isinstance(exc, httpx.HTTPStatusError):
         assert exc.response.status_code == 401
-    elif isinstance(exc, BaseExceptionGroup):
-        errs = exc.subgroup(httpx.HTTPStatusError)
+    elif callable(subgroup := getattr(exc, "subgroup", None)):
+        errs = subgroup(httpx.HTTPStatusError)
         assert errs is not None, f"No HTTPStatusError in group: {exc}"
         assert errs.exceptions[0].response.status_code == 401
     else:
@@ -397,7 +399,7 @@ async def test_session_proxy_with_auth():
                 ) as _:
                     pass
                 pytest.fail("Expected HTTPStatusError")
-            except BaseException as exc:
+            except Exception as exc:
                 assert_http_status_unauthorized_in_exception_group(exc)
 
             # MCP endpoint with wrong key -> 401
@@ -413,7 +415,7 @@ async def test_session_proxy_with_auth():
                 ) as _:
                     pass
                 pytest.fail("Expected HTTPStatusError")
-            except BaseException as exc:
+            except Exception as exc:
                 assert_http_status_unauthorized_in_exception_group(exc)
 
             # MCP endpoint with correct key

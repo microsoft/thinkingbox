@@ -194,7 +194,6 @@ class BackoffAsyncClient:
         base_headers = kwargs.pop("headers", None)
 
         retries = BackoffRetries()
-        action = RetryAction(retry=True, delay=1.0)
 
         # We'll loop until we either return or raise
         while True:
@@ -270,7 +269,6 @@ class BackoffAsyncClient:
         base_headers = kwargs.pop("headers", None)
 
         retries = BackoffRetries()
-        action = RetryAction(retry=True, delay=1.0)
 
         while True:
             headers = dict(base_headers) if base_headers else {}

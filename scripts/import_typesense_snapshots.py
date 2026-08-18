@@ -25,7 +25,8 @@ def wait_until_healthy(url: str, timeout: float, max_wait: float):
             resp = s.get(url)
             if resp.status_code == 200:
                 return
-        except Exception:
+        except httpx.HTTPError:
+            # Typesense may reject connections while it is still starting.
             pass
         if time.monotonic() - start > max_wait:
             raise TimeoutError(
@@ -84,6 +85,7 @@ class TypesenseClient:
                 self.client.collections[collection_name].delete()
                 print(f"Deleted collection {collection_name}")
             except typesense.exceptions.ObjectNotFound:
+                # The requested collection is already absent.
                 pass
         else:
             # check if collection already exists
@@ -92,6 +94,7 @@ class TypesenseClient:
                 collection_exists = True
                 print(f"Found collection {collection_name}")
             except typesense.exceptions.ObjectNotFound:
+                # The collection is created below when it cannot be retrieved.
                 pass
         # Create collection if it doesn't exist
         if not collection_exists:
