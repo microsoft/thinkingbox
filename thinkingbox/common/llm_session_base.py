@@ -2,10 +2,8 @@
 # Licensed under the MIT License.
 
 import contextlib
-import ssl
 from abc import ABC, abstractmethod
 from collections.abc import Collection
-from pathlib import Path
 from typing import Any, AsyncIterator
 
 import httpx

@@ -11,7 +11,6 @@ from thinkingbox.common.config_types import RubricConfig
 from thinkingbox.common.rubrics_judge import (
     SYSTEM_PROMPT_PENALTY,
     SYSTEM_PROMPT_POSITIVE,
-    USER_PROMPT_TPL,
     RubricJudge,
 )
 
