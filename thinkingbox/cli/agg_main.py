@@ -185,7 +185,7 @@ class Metrics(BaseModel):
     mean_pass_ci_low: float = 0.0
     mean_pass_ci_high: float = 0.0
     unbiased_pass_at_k: list[tuple[int, float]] = Field(default_factory=list)
-    unbiased_pass_power_k: list[tuple[int, float]] = Field(default_factory=list)
+    pass_power_k: list[tuple[int, float]] = Field(default_factory=list)
 
 
 def pass_at_k_unbiased(n, c, k: int):
@@ -222,17 +222,20 @@ def pass_at_k_unbiased(n, c, k: int):
     return 1.0 - float(np.prod(1.0 - k / denom_range))
 
 
-def pass_power_k_unbiased(n: int, c: int, k: int):
+def pass_power_k(n: int, c: int, k: int):
     """
-    Computes the unbiased pass^k metric for a set of test results.
+    Computes the pass^k metric for a set of test results.
 
-    pass^k is defined as the probability that a test case passes in all of k independent runs,
-    assuming unbiased sampling. It is calculated as (mean pass rate) ** k, i.e., the k-th power
+    pass^k is defined as the probability that a test case passes in all of k independent runs. It is calculated as (mean pass rate) ** k, i.e., the k-th power
     of the fraction of runs that passed.
 
     This differs from pass@k, which is the probability that at least one of k runs passes.
     pass@k is computed as 1 minus the probability that all k runs fail, whereas pass^k is the
     probability that all k runs succeed.
+
+    Unlike pass@k, we deliberately use a biased estimator for pass^k. An unbiased estimator is (c choose k)/(n choose k),
+    but it is zero whenever c < k, providing little differentiation among difficult cases. We instead use (c/n)^k, which retains a
+    non-zero signal even when c > 0.
 
     Args:
         n (int): Total number of runs
@@ -240,7 +243,7 @@ def pass_power_k_unbiased(n: int, c: int, k: int):
         k (int): Number of independent runs to consider.
 
     Returns:
-        float: The unbiased pass^k metric.
+        float: The pass^k metric.
     """
     assert k > 0, "pass^k requires k > 0"
     assert c <= n, "pass^k requires c <= n"
@@ -434,9 +437,7 @@ def aggregate_results(results: dict[str, PerTestCaseResults]) -> Metrics:
         total_pass += correct_runs
         for k in ks:
             pass_at_k_list[k].append(pass_at_k_unbiased(n=runs, c=correct_runs, k=k))
-            pass_power_k_list[k].append(
-                pass_power_k_unbiased(n=runs, c=correct_runs, k=k)
-            )
+            pass_power_k_list[k].append(pass_power_k(n=runs, c=correct_runs, k=k))
 
     out.runs_per_test = runs
     out.mean_pass = (total_pass / out.total_runs) if (out.total_runs) else 0.0
@@ -447,7 +448,7 @@ def aggregate_results(results: dict[str, PerTestCaseResults]) -> Metrics:
     out.unbiased_pass_at_k = [
         (k, safe_mean(v, default=0.0)) for k, v in pass_at_k_list.items()
     ]
-    out.unbiased_pass_power_k = [
+    out.pass_power_k = [
         (k, safe_mean(v, default=0.0)) for k, v in pass_power_k_list.items()
     ]
     return out
@@ -467,9 +468,9 @@ def print_metrics(metrics: Metrics):
         print("Pass@k:")
         for k, v in metrics.unbiased_pass_at_k:
             print(f"  pass@{k}: {v:.2f}")
-    if metrics.unbiased_pass_power_k:
+    if metrics.pass_power_k:
         print("Pass^k:")
-        for k, v in metrics.unbiased_pass_power_k:
+        for k, v in metrics.pass_power_k:
             print(f"  pass^{k}: {v:.2f}")
 
 
