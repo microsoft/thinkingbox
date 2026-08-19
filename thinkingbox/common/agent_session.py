@@ -191,8 +191,6 @@ class AgentSession(AgentSessionBase):
         tr_fw_messages = []
 
         while True:
-            last_msg = self.conversation.messages[-1]
-
             # get new message
             with self.timers.measure("time_agent"):
                 messages = await self.llm.get_completion()

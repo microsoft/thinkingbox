@@ -325,4 +325,5 @@ def _try_store_raw_messages(agent: AgentSessionBase | None, result: DecodeResult
         # TODO let raw_messages be Any type instead?
         result.raw_messages = agent.get_raw_messages()
     except ValueError:
+        # Raw messages are optional and may not match the serializable schema.
         pass

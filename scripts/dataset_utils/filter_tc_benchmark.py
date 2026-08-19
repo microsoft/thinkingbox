@@ -113,7 +113,7 @@ def filter_high_quality_samples(
 
         # Then group by scenario and aggregate
         results_scenario = results_by_uid.groupby("scenario").agg(
-            {"result": "mean", "uid": lambda x: list(x)}
+            {"result": "mean", "uid": list}
         )
 
         # Apply bottom threshold

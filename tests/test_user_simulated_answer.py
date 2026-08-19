@@ -226,22 +226,13 @@ async def test_user_simulator_sanitizes_done_marker():
     assert "<DONE>" not in sent_prompt
 
 
-def test_user_simulator_uses_correct_prompt():
-    """Test that correct system prompt is selected based on flag."""
+def test_user_simulator_prompts_differ_by_end_capability():
+    """Test that ending support changes the user simulator prompt."""
     from thinkingbox.common.user_simulated_answer import (
         SYSTEM_PROMPT,
         SYSTEM_PROMPT_WITH_END,
     )
 
-    mock_llm = MockSession(completions=[[Text(role="assistant", content="test")]])
-
-    # With ending disabled
-    sim_no_end = UserSimulator(llm=mock_llm, can_end_conversation=False)
-
-    # With ending enabled
-    sim_with_end = UserSimulator(llm=mock_llm, can_end_conversation=True)
-
-    # Verify prompts are different
     assert SYSTEM_PROMPT != SYSTEM_PROMPT_WITH_END
     assert "<DONE>" in SYSTEM_PROMPT_WITH_END
     assert "ENDING THE CONVERSATION" in SYSTEM_PROMPT_WITH_END

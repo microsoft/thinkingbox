@@ -6,8 +6,6 @@ import json
 from enum import Enum
 from typing import Any, Literal
 
-import httpx
-
 from thinkingbox.common.chat_types import (
     Message,
     ParallelToolCall,

@@ -116,6 +116,7 @@ class MCPWorkerRef(MultiToolsInterface):
             try:
                 await self.task
             except asyncio.CancelledError:
+                # Cancellation is the expected outcome after the stop timeout.
                 pass
 
 

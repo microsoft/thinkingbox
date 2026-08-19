@@ -38,11 +38,11 @@ def get_mock_async_client(response_json):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("use_certificate", [True, False])
-@patch("thinkingbox.common.llm_session_base.Path.is_file", return_value=True)
-@patch("thinkingbox.common.llm_session_base.ssl.create_default_context")
+@patch("thinkingbox.common.http_client.Path.is_file", return_value=True)
+@patch("thinkingbox.common.http_client.ssl.create_default_context")
 @patch("thinkingbox.common.llm_session_base.httpx.AsyncClient")
 async def test_client_certificate(
-    mock_async_client, mock_ssl_context, _mock_path_exists, use_certificate
+    mock_async_client, mock_ssl_context, _mock_path_is_file, use_certificate
 ):
     # AsyncClient mock needs to return a mock response for the _get_completion call
     mock_async_client.return_value = get_mock_async_client(SIMPLE_RESPONSE)
@@ -78,12 +78,12 @@ async def test_client_certificate(
         assert kwargs.get("verify") is True
 
 
-@patch("thinkingbox.common.llm_session_base.Path.exists")
-@patch("thinkingbox.common.llm_session_base.ssl.create_default_context")
+@patch("thinkingbox.common.http_client.Path.is_file")
+@patch("thinkingbox.common.http_client.ssl.create_default_context")
 def test_get_completion_certificate_file_does_not_exist(
-    _mock_ssl_context, _mock_path_exists
+    _mock_ssl_context, _mock_path_is_file
 ):
-    _mock_path_exists.return_value = False
+    _mock_path_is_file.return_value = False
     config = get_test_aoai_config()
     config.client_certificate = "/invalid/path/to/client.pem"
     with pytest.raises(
@@ -94,9 +94,8 @@ def test_get_completion_certificate_file_does_not_exist(
 
 
 @pytest.mark.asyncio
-@patch("thinkingbox.common.llm_session_base.Path.exists", return_value=True)
 @patch("thinkingbox.common.llm_session_base.httpx.AsyncClient")
-async def test_client_api_key(mock_async_client, _mock_path_exists):
+async def test_client_api_key(mock_async_client):
     # AsyncClient mock needs to return a mock response for the _get_completion call
     mock_async_client.return_value = get_mock_async_client(SIMPLE_RESPONSE)
 
@@ -113,9 +112,8 @@ async def test_client_api_key(mock_async_client, _mock_path_exists):
 
 
 @pytest.mark.asyncio
-@patch("thinkingbox.common.llm_session_base.Path.exists", return_value=True)
 @patch("thinkingbox.common.llm_session_base.httpx.AsyncClient")
-async def test_response_schema_in_payload(mock_async_client, _mock_path_exists):
+async def test_response_schema_in_payload(mock_async_client):
     """response_schema should build the full response_format in the request payload."""
     mock_async_client.return_value = get_mock_async_client(SIMPLE_RESPONSE)
 
@@ -194,9 +192,8 @@ RESPONSE_WITH_USAGE = {
 
 
 @pytest.mark.asyncio
-@patch("thinkingbox.common.llm_session_base.Path.exists", return_value=True)
 @patch("thinkingbox.common.llm_session_base.httpx.AsyncClient")
-async def test_get_completion_reports_usage(mock_async_client, _mock_path_exists):
+async def test_get_completion_reports_usage(mock_async_client):
     mock_async_client.return_value = get_mock_async_client(RESPONSE_WITH_USAGE)
 
     session = AOAISession.from_config(get_test_aoai_config())
