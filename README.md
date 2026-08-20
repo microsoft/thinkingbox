@@ -436,6 +436,10 @@ You can get a full list of the testcases in a certain file or directory, or of t
 
 This repository does not vendor third-party source code. All runtime and development dependencies are declared in `pyproject.toml` / `uv.lock` and installed from public package indexes (PyPI). Each dependency retains its own license.
 
+## Citation
+
+A paper describing ThinkingBox is coming soon.
+
 ## Acknowledgments
 
 ThinkingBox began in a private repository and was widely used by a group of
@@ -453,6 +457,7 @@ We also thank the following developers from the Microsoft Copilot Studio RL
 team:
 
 - [Aaron Dunlop](https://github.com/aarondunlopms)
+- Ali Keramati
 - [Anuar Sharafudinov](https://github.com/Mega4alik)
 - [Calvin Wang](https://github.com/calvinwang15)
 - Cosmin Popovici
