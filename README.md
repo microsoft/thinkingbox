@@ -465,6 +465,8 @@ team:
 - [Tommy Guy](https://github.com/guyrt)
 - [Tuhin Kundu](https://github.com/TuhinKundu)
 - [Vadim Smolyakov](https://github.com/vasmolya-msft)
+- [Young Ko](https://github.com/YoungKo)
+- [Zhouchun Li](https://github.com/zhuochunli)
 
 ## Trademarks
 
