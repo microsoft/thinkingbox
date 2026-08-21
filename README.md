@@ -438,7 +438,7 @@ This repository does not vendor third-party source code. All runtime and develop
 
 ## Citation
 
-A paper describing ThinkingBox is coming soon.
+Read the [ThinkingBox paper](https://arxiv.org/abs/2608.19741).
 
 ## Acknowledgments
 
