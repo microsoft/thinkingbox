@@ -438,7 +438,16 @@ This repository does not vendor third-party source code. All runtime and develop
 
 ## Citation
 
-Read the [ThinkingBox paper](https://arxiv.org/abs/2608.19741).
+Read the [ThinkingBox paper](https://arxiv.org/abs/2608.19741). If you find this work useful, or if you use ThinkingBox or ThinkingBox-Data, please kindly cite:
+
+```
+@article{li2026one,
+  title={One Success Isn't Reliability: ThinkingBox, a Sandbox and Benchmark for Agents in Stateful Business Workflows},
+  author={Li, Zhuochun and Ko, Youngmin and Keramati, Ali and Ferri, Nicola and Pelaez, Susana Palmaz Lopez and Tsai, Liang-Chun and Wang, Calvin and Milletari, Mirco and Kundu, Tuhin and Smolyakov, Vadim and others},
+  journal={arXiv preprint arXiv:2608.19741},
+  year={2026}
+}
+```
 
 ## Acknowledgments
 
