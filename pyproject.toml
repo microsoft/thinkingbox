@@ -9,7 +9,7 @@ description = "A self-contained agent that thinks inside the box"
 requires-python = ">=3.10"
 dependencies = [
     "mcp[cli]",
-    "fastmcp",
+    "fastmcp>=3.4.7,<4",
     "httpx",
     "pydantic",
     "pydantic[email]",

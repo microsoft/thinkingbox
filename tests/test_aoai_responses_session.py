@@ -9,6 +9,7 @@ import pytest
 
 from thinkingbox.common.aoai_responses_session import AOAIResponsesSession
 from thinkingbox.common.chat_types import Text
+from thinkingbox.common.config_types import AOAIResponsesSessionConfig
 
 
 def _mock_client_factory(response_payload):
@@ -48,6 +49,16 @@ SIMPLE_RESPONSE = {
 }
 
 
+@pytest.mark.parametrize("reasoning_effort", ["xhigh", "provider-defined"])
+def test_config_accepts_provider_defined_reasoning_effort(reasoning_effort):
+    config = AOAIResponsesSessionConfig(
+        deployment="test",
+        reasoning_effort=reasoning_effort,
+    )
+
+    assert config.reasoning_effort == reasoning_effort
+
+
 @pytest.mark.asyncio
 async def test_response_schema_in_payload(monkeypatch):
     """response_schema should build the full text.format in the request payload."""
@@ -81,6 +92,25 @@ async def test_response_schema_in_payload(monkeypatch):
             "schema": schema,
         }
     }
+
+
+@pytest.mark.asyncio
+async def test_xhigh_reasoning_effort_in_payload(monkeypatch):
+    session = AOAIResponsesSession(
+        deployment="test",
+        endpoint_url="https://test",
+        is_reasoning=True,
+        reasoning_source="none",
+        reasoning_effort="xhigh",
+    )
+    mock_client = _mock_client_factory(SIMPLE_RESPONSE)
+    monkeypatch.setattr(session, "get_client", partial(lambda c: c, mock_client))
+
+    await session.get_completion(
+        conversation=[Text(role="user", content="Hello")],
+    )
+
+    assert mock_client.last_post_kwargs["json"]["reasoning"] == {"effort": "xhigh"}
 
 
 @pytest.mark.asyncio

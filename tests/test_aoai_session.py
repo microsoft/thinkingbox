@@ -23,6 +23,16 @@ def get_test_aoai_config():
     )
 
 
+@pytest.mark.parametrize("reasoning_effort", ["xhigh", "provider-defined"])
+def test_config_accepts_provider_defined_reasoning_effort(reasoning_effort):
+    config = AOAISessionConfig(
+        deployment="test_deployment",
+        reasoning_effort=reasoning_effort,
+    )
+
+    assert config.reasoning_effort == reasoning_effort
+
+
 SIMPLE_RESPONSE = {
     "choices": [{"message": {"role": "assistant", "content": "Test response"}}]
 }
@@ -146,6 +156,23 @@ async def test_response_schema_in_payload(mock_async_client):
             "schema": schema,
         },
     }
+
+
+@pytest.mark.asyncio
+@patch("thinkingbox.common.llm_session_base.httpx.AsyncClient")
+async def test_xhigh_reasoning_effort_in_payload(mock_async_client):
+    mock_async_client.return_value = get_mock_async_client(SIMPLE_RESPONSE)
+    config = get_test_aoai_config().model_copy(
+        update={"is_reasoning": True, "reasoning_effort": "xhigh"}
+    )
+    session = AOAISession.from_config(config)
+
+    await session._get_completion()
+
+    post_mock = mock_async_client.return_value.__aenter__.return_value.post
+    call_kwargs = post_mock.call_args
+    payload = call_kwargs.kwargs.get("json") or call_kwargs[1]["json"]
+    assert payload["reasoning_effort"] == "xhigh"
 
 
 @pytest.mark.asyncio

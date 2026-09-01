@@ -4,7 +4,7 @@
 import copy
 import json
 from enum import Enum
-from typing import Any, Literal
+from typing import Any
 
 from thinkingbox.common.chat_types import (
     Message,
@@ -14,7 +14,7 @@ from thinkingbox.common.chat_types import (
     ToolDef,
     ToolResponse,
 )
-from thinkingbox.common.config_types import AOAIResponsesSessionConfig
+from thinkingbox.common.config_types import AOAIResponsesSessionConfig, ReasoningEffort
 from thinkingbox.common.credential_factory import create_credential
 from thinkingbox.common.llm_session_base import HTTPLLMSessionBase
 from thinkingbox.common.usage_types import Usage
@@ -251,7 +251,7 @@ class AOAIResponsesSession(HTTPLLMSessionBase):
     async def _responses(
         self,
         messages: list[dict],
-        reasoning_effort_hint: Literal["low", "medium", "high", None],
+        reasoning_effort_hint: ReasoningEffort,
         **kwargs,
     ):
         payload = {
