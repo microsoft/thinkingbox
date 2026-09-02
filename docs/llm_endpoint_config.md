@@ -110,6 +110,10 @@ agent_model:
     timeout: 60.0
 ```
 
+Reasoning effort is a provider-defined string that is forwarded unchanged.
+Supported values, such as `low`, `medium`, `high`, or `xhigh`, depend on the
+selected model deployment.
+
 **OpenAI-compatible Responses**
 
 Provide the URL directory in `endpoint_url`, model name in `deployment` and do not set `account_name`.

@@ -14,6 +14,8 @@ from thinkingbox.common.tag_types import TestCaseTags
 
 logger = logging.getLogger(__name__)
 
+ReasoningEffort = str | None
+
 # config.yaml
 
 
@@ -87,7 +89,7 @@ class AOAISessionConfig(HTTPLLMSessionConfig):
     temperature: float = 1.0
     max_completion_tokens: int = 4096
     is_reasoning: bool = False
-    reasoning_effort: Literal["low", "medium", "high", None] = None
+    reasoning_effort: ReasoningEffort = None
     api_version: str = "2024-10-21"
     disabled_params: list[str] = Field(default_factory=list)
     parallel_tool_calls: bool = False
@@ -103,7 +105,7 @@ class AOAIResponsesSessionConfig(HTTPLLMSessionConfig):
     max_completion_tokens: int = 4096
     is_reasoning: bool = False
     reasoning_source: Literal["none", "summary", "content"] = "summary"
-    reasoning_effort: Literal["low", "medium", "high", None] = None
+    reasoning_effort: ReasoningEffort = None
     use_stateful_protocol: bool = False
     api_version: str = "2024-10-21"
     parallel_tool_calls: bool = False
