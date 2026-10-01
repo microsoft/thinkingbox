@@ -19,7 +19,7 @@ It supports:
 
 ## Repositories
 
-ThinkingBox is split across two repositories:
+ThinkingBox is split across 3 repositories:
 
 - **[thinkingbox](https://github.com/microsoft/thinkingbox)** (this repo) — the
   framework: the `tb` CLI, the MCP Session Proxy, the agent/user/judge loop,
@@ -31,6 +31,12 @@ ThinkingBox is split across two repositories:
   `thinkingbox_tools`, `ms_toloka_servers`), and supporting data files
   (embeddings, knowledge bases, etc.) under `support/`. This is where real
   scenarios, test cases, and tools live; clone it for any non-trivial work.
+- **[thinkingbox-training](https://github.com/microsoft/thinkingbox-training)** —
+  the reinforcement-learning post-training on top of the ThinkingBox framework.
+  Supports group-relative policy optimization,
+  LoRA adapters, and multi-turn MCP rollouts, with FSDP2 and sequence
+  parallelism for distributed training. Includes training, vLLM serving,
+  checkpoint recovery, and evaluation scripts.
 
 For tutorial-style worked examples (running scenarios, batch evaluation,
 interactive chat against real datasets), see the
@@ -480,7 +486,7 @@ team:
 - [Tuhin Kundu](https://github.com/TuhinKundu)
 - [Vadim Smolyakov](https://github.com/vasmolya-msft)
 - [Young Ko](https://github.com/YoungKo)
-- [Zhouchun Li](https://github.com/zhuochunli)
+- [Zhuochun Li](https://github.com/zhuochunli)
 
 ## Trademarks
 
