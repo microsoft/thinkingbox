@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import numpy as np
-from scipy.special import betainc, betaincinv
+from scipy.special import betainc, betaincc, betaincinv
 
 
 def beta_post_params(
@@ -62,13 +62,15 @@ def prob_A_gt_B(
     """
     Exact P(p_A > p_B) = INTEGRAL_0^1 f_A(x) * F_B(x) dx
                        = INTEGRAL_0^1 F_B(F_A^-1(u)) du   (u = F_A(x)),
-    implemented with betaincinv() and betainc()
+    implemented with betaincinv() and betainc()/betaincc()
 
     Integrating over quantiles keeps the integrand bounded in [0, 1].
     Integrating f_A directly on a fixed grid misses its peak when the
     posterior is narrow or piled up at 0 or 1 (e.g. 1000/1000 passes).
     We integrate over the quantiles of the narrower posterior, so the
-    integrand is smooth, and use P(A > B) = 1 - P(B > A) when that is B.
+    integrand is smooth. When that is B, the integrand is the complement
+    1 - F_A(F_B^-1(u)) computed with betaincc(), rather than 1 - P(B > A),
+    so a very small P(A > B) is not lost to cancellation.
     """
 
     aA, bA = beta_post_params(kA, nA, a0, b0)
@@ -81,9 +83,9 @@ def prob_A_gt_B(
     # convert frm [-1,1] to [0,1]
     u = (x + 1.0) / 2.0
     wu = w / 2.0
-    integrand = betainc(aB, bB, betaincinv(aA, bA, u))
-    p = float(np.sum(wu * integrand))
-    return 1.0 - p if swap else p
+    f = betaincc if swap else betainc
+    integrand = f(aB, bB, betaincinv(aA, bA, u))
+    return float(np.sum(wu * integrand))
 
 
 # Sampling to estimate P(A-B > epsilon)
