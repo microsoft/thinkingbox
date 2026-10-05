@@ -176,12 +176,19 @@ class AnthropicMessagesSession(HTTPLLMSessionBase):
         usage = msg.get("usage", {})
         input_tokens = usage.get("input_tokens", 0)
         output_tokens = usage.get("output_tokens", 0)
-        cached_tokens = usage.get("cache_read_input_tokens", 0)
+        cached_tokens = usage.get("cache_read_input_tokens") or 0
+        cache_creation_tokens = usage.get("cache_creation_input_tokens") or 0
         self.last_usage = Usage(
             input_tokens=input_tokens,
-            input_tokens_details=InputTokensDetails(cached_tokens=cached_tokens),
+            input_tokens_details=InputTokensDetails(
+                cached_tokens=cached_tokens,
+                cache_creation_tokens=cache_creation_tokens,
+            ),
             output_tokens=output_tokens,
-            total_tokens=input_tokens + output_tokens,
+            total_tokens=input_tokens
+            + cached_tokens
+            + cache_creation_tokens
+            + output_tokens,
         )
 
         if update_conversation:
