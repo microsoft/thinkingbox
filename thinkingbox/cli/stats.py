@@ -55,13 +55,7 @@ def pass_power_k_exact_se(n: int, successes: int, k: int) -> float:
     _validate_counts(n, successes, k)
     p_hat = successes / n
     values = np.array([(count / n) ** k for count in range(n + 1)], dtype=float)
-    probabilities = np.array(
-        [
-            math.comb(n, count) * p_hat**count * (1.0 - p_hat) ** (n - count)
-            for count in range(n + 1)
-        ],
-        dtype=float,
-    )
+    probabilities = binom.pmf(np.arange(n + 1), n, p_hat)
     mean = float(np.dot(values, probabilities))
     second_moment = float(np.dot(values**2, probabilities))
     return math.sqrt(max(0.0, second_moment - mean**2))
