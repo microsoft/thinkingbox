@@ -1,12 +1,8 @@
-# Copyright (c) Microsoft Corporation.
-# Licensed under the MIT License.
-
 import json
 import sys
 from typing import Annotated, Any, Callable, Iterable
 
 import click
-import numpy as np
 from pydantic import BaseModel, Field
 from pydantic_core import to_jsonable_python
 from rich import box
@@ -19,8 +15,21 @@ from thinkingbox.common.chat_types import (
     Text,
     ToolResponse,
 )
-from thinkingbox.common.eval_utils import cred_int, prob_in_zone
+from thinkingbox.common.eval_utils import prob_in_zone
 from thinkingbox.common.utils import ErrorInfo, iter_validate_jsonl
+from thinkingbox.cli.stats import (
+    mean_and_se_of_mean,
+    pass_at_k,
+    pass_at_k_exact_se,
+    pass_power_k,
+    pass_power_k_exact_se,
+    pass_rate_and_se,
+)
+
+
+def format_result(value: float) -> str:
+    """Format a statistical result with at most four significant digits."""
+    return f"{value:.4g}"
 
 
 class PerTestCaseResults(BaseModel):
@@ -87,10 +96,10 @@ class AvgMinMax(BaseModel):
 
 class Column:
     def __init__(
-        self, name: str, concise: bool = False, format: Callable | None = None, **kwargs
+        self, name: str, details: bool = False, format: Callable | None = None, **kwargs
     ):
         self.name = name
-        self.concise = concise
+        self.details = details
         self.format = format if (format is not None) else str
         self.kwargs = kwargs
 
@@ -107,36 +116,40 @@ class TableModel(BaseModel):
 
 
 class PerTestCaseTableRow(TableModel):
-    uid: Annotated[str, Column("Test Case ID", concise=True, style="cyan")]
-    runs: Annotated[int, Column("Runs", concise=True, justify="right", style="green")]
-    passed: Annotated[int, Column("Pass", concise=True, justify="right", style="green")]
-    failed: Annotated[int, Column("Fail", concise=True, justify="right", style="red")]
-    error: Annotated[int, Column("Error", concise=True, justify="right", style="red")]
+    uid: Annotated[str, Column("Test Case ID", style="cyan")]
+    runs: Annotated[int, Column("Runs", justify="right", style="green")]
+    passed: Annotated[int, Column("Pass", justify="right", style="green")]
+    failed: Annotated[int, Column("Fail", justify="right", style="red")]
+    error: Annotated[int, Column("Error", justify="right", style="red")]
     assistant_turns: Annotated[
-        AvgMinMax, Column("Avg-Ast(min,max)", justify="right", style="blue")
+        AvgMinMax,
+        Column("Avg-Ast(min,max)", details=True, justify="right", style="blue"),
     ]
     user_turns: Annotated[
-        AvgMinMax, Column("Avg-Usr(min,max)", justify="right", style="blue")
+        AvgMinMax,
+        Column("Avg-Usr(min,max)", details=True, justify="right", style="blue"),
     ]
     tool_turns: Annotated[
-        AvgMinMax, Column("Avg-TC(min,max)", justify="right", style="blue")
+        AvgMinMax,
+        Column("Avg-TC(min,max)", details=True, justify="right", style="blue"),
     ]
     output_tokens: Annotated[
         AvgMinMax,
-        Column("Avg-OutTkns(min,max)", justify="right", style="blue"),
+        Column("Avg-OutTkns(min,max)", details=True, justify="right", style="blue"),
     ]
     reasoning_tokens: Annotated[
         AvgMinMax,
-        Column("Avg-ReaTkns(min,max)", justify="right", style="blue"),
+        Column("Avg-ReaTkns(min,max)", details=True, justify="right", style="blue"),
     ]
     char_lengths: Annotated[
         AvgMinMax,
-        Column("Avg-CharLength(min,max)", justify="right", style="blue"),
+        Column("Avg-CharLength(min,max)", details=True, justify="right", style="blue"),
     ]
     exec_time: Annotated[
         AvgMinMax,
         Column(
             "Avg-ExecTime(min,max)",
+            details=True,
             format=lambda x: x.to_str(2, 2),
             justify="right",
             style="blue",
@@ -146,17 +159,40 @@ class PerTestCaseTableRow(TableModel):
         float,
         Column(
             "Success%",
-            concise=True,
-            format=lambda x: f"{x*100:.2f}",
+            format=lambda x: format_result(x * 100),
             justify="right",
             style="blue",
         ),
+    ]
+    success_pct_ste: Annotated[
+        float,
+        Column(
+            "Success% SE",
+            format=lambda x: format_result(x * 100),
+            justify="right",
+            style="blue",
+        ),
+    ]
+    pass_at_n: Annotated[
+        float,
+        Column("Pass@N", format=format_result, justify="right", style="blue"),
+    ]
+    pass_at_n_ste: Annotated[
+        float,
+        Column("Pass@N SE", format=format_result, justify="right", style="blue"),
+    ]
+    pass_power_n: Annotated[
+        float,
+        Column("Pass^N", format=format_result, justify="right", style="blue"),
+    ]
+    pass_power_n_ste: Annotated[
+        float,
+        Column("Pass^N SE", format=format_result, justify="right", style="blue"),
     ]
     in_goldilocks_zone: Annotated[
         bool,
         Column(
             "GZ@95%",
-            concise=True,
             format=lambda x: "YES" if x else "NO",
             justify="right",
             style="blue",
@@ -166,8 +202,7 @@ class PerTestCaseTableRow(TableModel):
         float,
         Column(
             "P(GZ|Data)",
-            concise=True,
-            format=lambda x: f"{x:.2f}",
+            format=format_result,
             justify="right",
             style="blue",
         ),
@@ -178,86 +213,60 @@ PASS_METRICS_K = [1, 5, 10, 20, 50, 100]
 
 
 class Metrics(BaseModel):
+    num_datasets: int = 0
     num_tests: int = 0
     runs_per_test: int = -1
     total_runs: int = 0
     mean_pass: float = 0.0
-    mean_pass_ci_low: float = 0.0
-    mean_pass_ci_high: float = 0.0
-    unbiased_pass_at_k: list[tuple[int, float]] = Field(default_factory=list)
-    pass_power_k: list[tuple[int, float]] = Field(default_factory=list)
+    mean_pass_ste: float = 0.0
+    pass_at_k: list["KMetricSummary"] = Field(default_factory=list)
+    pass_power_k: list["KMetricSummary"] = Field(default_factory=list)
 
 
-def pass_at_k_unbiased(n, c, k: int):
-    """
-    Compute the unbiased estimate of pass@k for a set of test results.
-
-    pass@k is the probability that at least one correct solution is found
-    among k randomly selected samples from the results. This metric is commonly
-    used in code generation and evaluation tasks to measure the effectiveness
-    of a model in producing correct outputs within a limited number of attempts.
-
-    The unbiased estimator corrects for the bias that occurs when the number of
-    correct solutions is small compared to the total number of samples. The algorithm
-    is based on the formula:
-        pass@k = 1 - C(n - c, k) / C(n, k)
-    where n is the total number of samples, c is the number of correct samples,
-    and C(a, b) is the binomial coefficient "a choose b".
-
-    Args:
-        n (int): Total number of runs
-        c (int): Number of correct outcomes
-        k (int): Number of samples to consider.
-
-    Returns:
-        float: Unbiased estimate of pass@k.
-    """
-    assert k > 0, "pass@k requires k > 0"
-    assert c <= n, "pass@k requires c <= n"
-    assert k <= n, "pass@k requires k <= n"
-    if n - c < k:
-        return 1.0
-    # 1 - C(n - c, k) / C(n, k)
-    denom_range = np.arange(n - c + 1, n + 1, dtype=float)
-    return 1.0 - float(np.prod(1.0 - k / denom_range))
+class MetricEstimate(BaseModel):
+    estimate: float
+    ste: float
+    count: int
 
 
-def pass_power_k(n: int, c: int, k: int):
-    """
-    Computes the pass^k metric for a set of test results.
+class KMetricSummary(MetricEstimate):
+    k: int
 
-    pass^k is defined as the probability that a test case passes in all of k independent runs. It is calculated as (mean pass rate) ** k, i.e., the k-th power
-    of the fraction of runs that passed.
 
-    This differs from pass@k, which is the probability that at least one of k runs passes.
-    pass@k is computed as 1 minus the probability that all k runs fail, whereas pass^k is the
-    probability that all k runs succeed.
+class InstanceMetrics(BaseModel):
+    uid: str
+    dataset: str
+    runs: int
+    successes: int
+    pass_rate: MetricEstimate
+    pass_at_n: MetricEstimate
+    pass_power_n: MetricEstimate
+    pass_at_k: list[KMetricSummary]
+    pass_power_k: list[KMetricSummary]
 
-    Unlike pass@k, we deliberately use a biased estimator for pass^k. An unbiased estimator is (c choose k)/(n choose k),
-    but it is zero whenever c < k, providing little differentiation among difficult cases. We instead use (c/n)^k, which retains a
-    non-zero signal even when c > 0.
 
-    Args:
-        n (int): Total number of runs
-        c (int): Number of correct outcomes
-        k (int): Number of independent runs to consider.
+class DatasetMetrics(BaseModel):
+    dataset: str
+    num_tests: int
+    total_runs: int
+    pass_rate: MetricEstimate
+    pass_at_k: list[KMetricSummary]
+    pass_power_k: list[KMetricSummary]
 
-    Returns:
-        float: The pass^k metric.
-    """
-    assert k > 0, "pass^k requires k > 0"
-    assert c <= n, "pass^k requires c <= n"
-    if n == 0:
-        return 0.0
-    return (c / n) ** k
+
+class BenchmarkMetrics(DatasetMetrics):
+    source_datasets: list[str]
 
 
 def make_per_test_table(
     test_results: dict[str, PerTestCaseResults],
+    instance_metrics: list[InstanceMetrics],
 ) -> list[PerTestCaseTableRow]:
+    metrics_by_uid = {metric.uid: metric for metric in instance_metrics}
     table: list[PerTestCaseTableRow] = []
     for uid, tr in test_results.items():
         assert isinstance(tr, PerTestCaseResults)
+        metric = metrics_by_uid[uid]
         passed = sum(tr.test_returned_vals)
         row = PerTestCaseTableRow(
             uid=uid,
@@ -272,7 +281,12 @@ def make_per_test_table(
             reasoning_tokens=AvgMinMax.from_list(tr.reasoning_tokens),
             char_lengths=AvgMinMax.from_list(tr.content_char_length),
             exec_time=AvgMinMax.from_list(tr.execution_time),
-            success_pct=passed / tr.runs if tr.runs else 0,
+            success_pct=metric.pass_rate.estimate,
+            success_pct_ste=metric.pass_rate.ste,
+            pass_at_n=metric.pass_at_n.estimate,
+            pass_at_n_ste=metric.pass_at_n.ste,
+            pass_power_n=metric.pass_power_n.estimate,
+            pass_power_n_ste=metric.pass_power_n.ste,
             in_goldilocks_zone=bool(tr.in_goldilocks_zone),
             likelihood_in_goldilocks_zone=tr.likelihood_in_goldilocks_zone,
         )
@@ -280,11 +294,13 @@ def make_per_test_table(
     return table
 
 
-def print_per_test_table(table: list[PerTestCaseTableRow], concise: bool = False):
+def print_per_test_table(
+    table: list[PerTestCaseTableRow], show_details: bool = False
+) -> None:
     rich_table = Table(title="Test Results", box=box.DOUBLE)
     columns = PerTestCaseTableRow.columns()
-    if concise:
-        columns = {name: col for name, col in columns.items() if col.concise}
+    if not show_details:
+        columns = {name: col for name, col in columns.items() if not col.details}
     for _, col in columns.items():
         rich_table.add_column(col.name, **col.kwargs)
     for row in table:
@@ -294,6 +310,62 @@ def print_per_test_table(table: list[PerTestCaseTableRow], concise: bool = False
         rich_table.add_row(*row_values)
     console = Console()
     console.print(rich_table)
+
+
+def _format_metric_estimates(metrics: list[KMetricSummary], label: str) -> str:
+    return "\n".join(
+        f"{label}{metric.k}: {format_result(metric.estimate)} +/- "
+        f"{format_result(metric.ste)}"
+        for metric in metrics
+    )
+
+
+def print_dataset_metrics_table(datasets: list[DatasetMetrics]) -> None:
+    table = Table(title="Dataset Metrics", box=box.DOUBLE)
+    table.add_column("Dataset", style="cyan")
+    table.add_column("Instances", justify="right", style="green")
+    table.add_column("Runs", justify="right", style="green")
+    table.add_column("Pass Rate +/- SE", justify="right", style="blue")
+    table.add_column("Pass@k +/- SE", justify="right", style="blue")
+    table.add_column("Pass^k +/- SE", justify="right", style="blue")
+
+    for dataset in datasets:
+        table.add_row(
+            dataset.dataset,
+            str(dataset.num_tests),
+            str(dataset.total_runs),
+            f"{format_result(dataset.pass_rate.estimate)} +/- "
+            f"{format_result(dataset.pass_rate.ste)}",
+            _format_metric_estimates(dataset.pass_at_k, "pass@"),
+            _format_metric_estimates(dataset.pass_power_k, "pass^"),
+        )
+
+    Console().print(table)
+
+
+def print_benchmark_metrics_table(benchmarks: list[BenchmarkMetrics]) -> None:
+    table = Table(title="Benchmark Metrics", box=box.DOUBLE)
+    table.add_column("Benchmark", style="cyan")
+    table.add_column("Source Datasets", style="cyan")
+    table.add_column("Instances", justify="right", style="green")
+    table.add_column("Runs", justify="right", style="green")
+    table.add_column("Pass Rate +/- SE", justify="right", style="blue")
+    table.add_column("Pass@k +/- SE", justify="right", style="blue")
+    table.add_column("Pass^k +/- SE", justify="right", style="blue")
+
+    for benchmark in benchmarks:
+        table.add_row(
+            benchmark.dataset,
+            "\n".join(benchmark.source_datasets),
+            str(benchmark.num_tests),
+            str(benchmark.total_runs),
+            f"{format_result(benchmark.pass_rate.estimate)} +/- "
+            f"{format_result(benchmark.pass_rate.ste)}",
+            _format_metric_estimates(benchmark.pass_at_k, "pass@"),
+            _format_metric_estimates(benchmark.pass_power_k, "pass^"),
+        )
+
+    Console().print(table)
 
 
 def get_decoded_result_stats(result: DecodeResult) -> dict[str, Any]:
@@ -412,73 +484,246 @@ def aggregate_results_per_test(
     return aggregated
 
 
-def aggregate_results(results: dict[str, PerTestCaseResults]) -> Metrics:
-    out = Metrics()
-    ks = []
-    pass_at_k_list = {}
-    pass_power_k_list = {}
-    total_pass = 0
-    runs = -1
-    for i, r in enumerate(v for _, v in results.items()):
-        if i == 0:
-            runs = r.runs
-            ks = [k for k in PASS_METRICS_K if k <= runs]
-            pass_at_k_list = {k: [] for k in ks}
-            pass_power_k_list = {k: [] for k in ks}
-        if r.runs != runs:
-            # do not compute if not all same # runs
-            ks.clear()
-            pass_at_k_list.clear()
-            pass_power_k_list.clear()
+def _metric_estimate(estimates: list[tuple[float, float]]) -> MetricEstimate:
+    estimate, ste, count = mean_and_se_of_mean(estimates)
+    return MetricEstimate(estimate=estimate, ste=ste, count=count)
 
-        out.num_tests += 1
-        out.total_runs += r.runs
-        correct_runs = sum(int(v) for v in r.test_returned_vals)
-        total_pass += correct_runs
-        for k in ks:
-            pass_at_k_list[k].append(pass_at_k_unbiased(n=runs, c=correct_runs, k=k))
-            pass_power_k_list[k].append(pass_power_k(n=runs, c=correct_runs, k=k))
 
-    out.runs_per_test = runs
-    out.mean_pass = (total_pass / out.total_runs) if (out.total_runs) else 0.0
-    if out.total_runs:
-        out.mean_pass_ci_low, out.mean_pass_ci_high = cred_int(
-            total_pass, out.total_runs, level=0.95, a0=0.5, b0=0.5
+def _parse_dataset(uid: str) -> str:
+    dataset, separator, instance = uid.partition(":")
+    if not separator or not dataset or not instance:
+        raise ValueError(
+            f"Expected UID in 'dataset.py:instance_name' format, got {uid!r}"
         )
-    out.unbiased_pass_at_k = [
-        (k, safe_mean(v, default=0.0)) for k, v in pass_at_k_list.items()
-    ]
-    out.pass_power_k = [
-        (k, safe_mean(v, default=0.0)) for k, v in pass_power_k_list.items()
-    ]
-    return out
+    return dataset
 
 
-def print_metrics(metrics: Metrics):
-    print(f"Number of tests: {metrics.num_tests}")
-    runs_per_test_str = (
-        str(metrics.runs_per_test) if (metrics.runs_per_test >= 0) else "(multiple)"
+def build_instance_metrics(
+    results: dict[str, PerTestCaseResults],
+) -> tuple[list[InstanceMetrics], int]:
+    if not results:
+        return [], 0
+
+    runs_per_test = {result.runs for result in results.values()}
+    if len(runs_per_test) != 1:
+        raise ValueError(
+            "All instances must have the same number of samples; "
+            f"found {sorted(runs_per_test)}"
+        )
+    runs = runs_per_test.pop()
+    ks = [k for k in PASS_METRICS_K if k <= runs]
+    instance_metrics: list[InstanceMetrics] = []
+
+    for uid, result in results.items():
+        successes = sum(int(value) for value in result.test_returned_vals)
+        pass_rate, pass_rate_ste = pass_rate_and_se(runs, successes)
+        pass_at_n = MetricEstimate(
+            estimate=pass_at_k(runs, successes, runs),
+            ste=pass_at_k_exact_se(runs, successes, runs),
+            count=1,
+        )
+        pass_power_n = MetricEstimate(
+            estimate=pass_power_k(runs, successes, runs),
+            ste=pass_power_k_exact_se(runs, successes, runs),
+            count=1,
+        )
+        instance_metrics.append(
+            InstanceMetrics(
+                uid=uid,
+                dataset=_parse_dataset(uid),
+                runs=runs,
+                successes=successes,
+                pass_rate=MetricEstimate(
+                    estimate=pass_rate,
+                    ste=pass_rate_ste,
+                    count=1,
+                ),
+                pass_at_n=pass_at_n,
+                pass_power_n=pass_power_n,
+                pass_at_k=[
+                    KMetricSummary(
+                        k=k,
+                        estimate=pass_at_k(runs, successes, k),
+                        ste=pass_at_k_exact_se(runs, successes, k),
+                        count=1,
+                    )
+                    for k in ks
+                ],
+                pass_power_k=[
+                    KMetricSummary(
+                        k=k,
+                        estimate=pass_power_k(runs, successes, k),
+                        ste=pass_power_k_exact_se(runs, successes, k),
+                        count=1,
+                    )
+                    for k in ks
+                ],
+            )
+        )
+
+    return instance_metrics, runs
+
+
+def _summarize_k_metrics(
+    instances: list[InstanceMetrics] | list[DatasetMetrics],
+    metric_name: str,
+) -> list[KMetricSummary]:
+    metrics_by_k: dict[int, list[tuple[float, float]]] = {}
+    for instance in instances:
+        for metric in getattr(instance, metric_name):
+            metrics_by_k.setdefault(metric.k, []).append((metric.estimate, metric.ste))
+    return [
+        KMetricSummary(k=k, **_metric_estimate(estimates).model_dump())
+        for k, estimates in sorted(metrics_by_k.items())
+    ]
+
+
+def aggregate_dataset_metrics(
+    instance_metrics: list[InstanceMetrics],
+) -> list[DatasetMetrics]:
+    grouped: dict[str, list[InstanceMetrics]] = {}
+    for metric in instance_metrics:
+        grouped.setdefault(metric.dataset, []).append(metric)
+
+    return [
+        _aggregate_metric_group(dataset, instances)
+        for dataset, instances in sorted(grouped.items())
+    ]
+
+
+def _aggregate_metric_group(
+    dataset: str, instances: list[InstanceMetrics]
+) -> DatasetMetrics:
+    return DatasetMetrics(
+        dataset=dataset,
+        num_tests=len(instances),
+        total_runs=sum(instance.runs for instance in instances),
+        pass_rate=_metric_estimate(
+            [
+                (instance.pass_rate.estimate, instance.pass_rate.ste)
+                for instance in instances
+            ]
+        ),
+        pass_at_k=_summarize_k_metrics(instances, "pass_at_k"),
+        pass_power_k=_summarize_k_metrics(instances, "pass_power_k"),
     )
-    print(f"Runs per test: {runs_per_test_str}")
+
+
+def _benchmark_name(dataset: str, suffixes: tuple[str, ...]) -> str:
+    stem, separator, extension = dataset.rpartition(".")
+    if not separator:
+        return dataset
+    for suffix in suffixes:
+        if stem.endswith(suffix):
+            return f"{stem.removesuffix(suffix)}.{extension}"
+    return dataset
+
+
+def aggregate_benchmark_metrics(
+    instance_metrics: list[InstanceMetrics],
+    aggregate_dataset_suffixes: tuple[str, ...],
+) -> list[BenchmarkMetrics]:
+    """Aggregate split dataset files into benchmark totals for matching suffixes."""
+    if not aggregate_dataset_suffixes:
+        return []
+    if any(not suffix for suffix in aggregate_dataset_suffixes):
+        raise ValueError("Dataset aggregation suffixes must not be empty")
+
+    normalized_suffixes = tuple(
+        sorted(set(aggregate_dataset_suffixes), key=len, reverse=True)
+    )
+    grouped: dict[str, list[InstanceMetrics]] = {}
+    source_datasets: dict[str, set[str]] = {}
+    for metric in instance_metrics:
+        benchmark = _benchmark_name(metric.dataset, normalized_suffixes)
+        grouped.setdefault(benchmark, []).append(metric)
+        source_datasets.setdefault(benchmark, set()).add(metric.dataset)
+
+    benchmarks: list[BenchmarkMetrics] = []
+    for benchmark, instances in sorted(grouped.items()):
+        sources = sorted(source_datasets[benchmark])
+        if len(sources) < 2:
+            continue
+        summary = _aggregate_metric_group(benchmark, instances)
+        benchmarks.append(
+            BenchmarkMetrics(
+                **summary.model_dump(),
+                source_datasets=sources,
+            )
+        )
+    return benchmarks
+
+
+def aggregate_results(
+    instance_metrics: list[InstanceMetrics],
+    dataset_metrics: list[DatasetMetrics],
+    runs_per_test: int,
+) -> Metrics:
+    if not instance_metrics:
+        return Metrics()
+
+    pass_rate = _metric_estimate(
+        [
+            (metric.pass_rate.estimate, metric.pass_rate.ste)
+            for metric in instance_metrics
+        ]
+    )
+    return Metrics(
+        num_datasets=len(dataset_metrics),
+        num_tests=len(instance_metrics),
+        runs_per_test=runs_per_test,
+        total_runs=sum(metric.runs for metric in instance_metrics),
+        mean_pass=pass_rate.estimate,
+        mean_pass_ste=pass_rate.ste,
+        pass_at_k=_summarize_k_metrics(instance_metrics, "pass_at_k"),
+        pass_power_k=_summarize_k_metrics(instance_metrics, "pass_power_k"),
+    )
+
+
+def print_metrics(metrics: Metrics) -> None:
+    print(f"Number of datasets: {metrics.num_datasets}")
+    print(f"Number of tests: {metrics.num_tests}")
+    print(f"Samples per instance: {metrics.runs_per_test}")
     print(f"Total runs: {metrics.total_runs}")
     print(
-        f"Mean per-sample accuracy: {metrics.mean_pass:.2f} (95% CI: {metrics.mean_pass_ci_low:.2f}-{metrics.mean_pass_ci_high:.2f})"
+        "Mean per-instance pass rate: "
+        f"{format_result(metrics.mean_pass)} +/- "
+        f"{format_result(metrics.mean_pass_ste)}"
     )
-    if metrics.unbiased_pass_at_k:
+    if metrics.pass_at_k:
         print("Pass@k:")
-        for k, v in metrics.unbiased_pass_at_k:
-            print(f"  pass@{k}: {v:.2f}")
+        for metric in metrics.pass_at_k:
+            print(
+                f"  pass@{metric.k}: {format_result(metric.estimate)} +/- "
+                f"{format_result(metric.ste)}"
+            )
     if metrics.pass_power_k:
         print("Pass^k:")
-        for k, v in metrics.pass_power_k:
-            print(f"  pass^{k}: {v:.2f}")
+        for metric in metrics.pass_power_k:
+            print(
+                f"  pass^{metric.k}: {format_result(metric.estimate)} +/- "
+                f"{format_result(metric.ste)}"
+            )
 
 
 @click.command()
 @click.argument(
     "input_file", required=True, default="-", metavar="INPUT", type=click.File("r")
 )
-@click.option("--concise", is_flag=True, help="Only print Pass/Fail stats")
+@click.option(
+    "--show-details",
+    is_flag=True,
+    help="Show per-test operational averages and ranges.",
+)
+@click.option(
+    "--aggregate-dataset-suffix",
+    "aggregate_dataset_suffixes",
+    multiple=True,
+    help=(
+        "Merge datasets whose filename stems end with this suffix into a "
+        "benchmark-total row. May be given multiple times."
+    ),
+)
 @click.option(
     "-f",
     "--output-format",
@@ -487,7 +732,12 @@ def print_metrics(metrics: Metrics):
     show_default=True,
     help="Output format",
 )
-def agg(input_file, concise: bool, output_format: str):
+def agg(
+    input_file,
+    show_details: bool,
+    aggregate_dataset_suffixes: tuple[str, ...],
+    output_format: str,
+):
     """
     Aggregate metrics from a JSONL file.
 
@@ -498,18 +748,30 @@ def agg(input_file, concise: bool, output_format: str):
     results = iter_validate_jsonl(input_file, model=DecodeResult)
 
     per_test_aggregated_results = aggregate_results_per_test(results)
-    per_test_table = make_per_test_table(per_test_aggregated_results)
-    metrics = aggregate_results(per_test_aggregated_results)
+    instance_metrics, runs_per_test = build_instance_metrics(
+        per_test_aggregated_results
+    )
+    per_test_table = make_per_test_table(per_test_aggregated_results, instance_metrics)
+    dataset_metrics = aggregate_dataset_metrics(instance_metrics)
+    benchmark_metrics = aggregate_benchmark_metrics(
+        instance_metrics, aggregate_dataset_suffixes
+    )
+    metrics = aggregate_results(instance_metrics, dataset_metrics, runs_per_test)
 
     if output_format == "table":
         if not per_test_table:
             print("No test results to display.")
         else:
-            print_per_test_table(per_test_table, concise=concise)
+            print_per_test_table(per_test_table, show_details=show_details)
+            print_dataset_metrics_table(dataset_metrics)
+            if benchmark_metrics:
+                print_benchmark_metrics_table(benchmark_metrics)
             print_metrics(metrics)
     elif output_format == "json":
         obj = {
-            "per_test": [to_jsonable_python(obj) for obj in per_test_table],
+            "per_test": [to_jsonable_python(obj) for obj in instance_metrics],
+            "per_dataset": [to_jsonable_python(obj) for obj in dataset_metrics],
+            "per_benchmark": [to_jsonable_python(obj) for obj in benchmark_metrics],
             "metrics": to_jsonable_python(metrics),
         }
         json.dump(obj, sys.stdout, indent=2)
