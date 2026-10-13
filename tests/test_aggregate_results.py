@@ -1,16 +1,29 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
+import json
 import math
 
 import pytest
+from click.testing import CliRunner
 
 from thinkingbox.cli.agg_main import (
     PerTestCaseResults,
     PerTestCaseTableRow,
+    agg,
     aggregate_benchmark_metrics,
     aggregate_dataset_metrics,
     aggregate_results,
     aggregate_results_per_test,
     build_instance_metrics,
     format_result,
+)
+from thinkingbox.cli.stats import (
+    pass_at_k,
+    pass_at_k_exact_se,
+    pass_power_k,
+    pass_power_k_exact_se,
+    pass_rate_and_se,
 )
 from thinkingbox.common.chat_types import (
     DecodeResult,
@@ -22,13 +35,72 @@ from thinkingbox.common.chat_types import (
     ToolCall,
     ToolResponse,
 )
-from thinkingbox.cli.stats import (
-    pass_at_k,
-    pass_at_k_exact_se,
-    pass_power_k,
-    pass_power_k_exact_se,
-    pass_rate_and_se,
-)
+
+
+@pytest.mark.parametrize("detailed", [False, True])
+def test_json_preserves_per_test_fields_and_adds_instance_metrics(detailed):
+    uid = "dataset.py:instance"
+    records = [
+        DecodeResult(
+            uid=uid,
+            messages=[Text(role="assistant", content="hello")],
+            test_result=_TestResult(result=True, reward=1.0),
+            metadata={"execution_time": 2.0},
+        ),
+        DecodeResult(
+            uid=uid,
+            messages=[],
+            test_result=_TestResult(
+                result=False, reward=0.0, lineno=1, line_content="assert False"
+            ),
+        ),
+        DecodeResult(
+            uid=uid,
+            messages=[],
+            is_system_error=True,
+            metadata={"error": {"type": "ValueError", "message": "failed"}},
+        ),
+    ]
+    args = ["-f", "json", "-"]
+    if detailed:
+        args.insert(0, "--detailed")
+    result = CliRunner().invoke(
+        agg, args, input="\n".join(record.model_dump_json() for record in records)
+    )
+    assert result.exit_code == 0, result.exception
+    payload = json.loads(result.output)
+    row = payload["per_test"][0]
+    assert (row["uid"], row["runs"]) == (uid, 3)
+    assert (row["passed"], row["failed"], row["error"]) == (1, 1, 1)
+    assert row["success_pct"] == pytest.approx(1 / 3)
+    assert row["assistant_turns"] == {
+        "avg_val": 1 / 3,
+        "min_val": 0.0,
+        "max_val": 1.0,
+        "count": 3,
+    }
+    assert row["exec_time"]["avg_val"] == pytest.approx(2 / 3)
+    assert {
+        "user_turns",
+        "tool_turns",
+        "output_tokens",
+        "reasoning_tokens",
+        "char_lengths",
+        "in_goldilocks_zone",
+        "likelihood_in_goldilocks_zone",
+        "success_pct_ste",
+        "pass_at_n",
+        "pass_at_n_ste",
+        "pass_power_n",
+        "pass_power_n_ste",
+    } <= row.keys()
+    instance = payload["instance_metrics"][0]
+    assert instance["uid"] == row["uid"]
+    assert instance["successes"] == row["passed"]
+    assert instance["pass_rate"]["estimate"] == row["success_pct"]
+    assert instance["pass_rate"]["ste"] == row["success_pct_ste"]
+    assert [metric["k"] for metric in instance["pass_at_k"]] == [1]
+    assert {"per_dataset", "per_benchmark", "metrics"} <= payload.keys()
 
 
 @pytest.fixture

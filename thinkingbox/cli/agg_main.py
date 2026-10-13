@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 import json
 import sys
 from typing import Annotated, Any, Callable, Iterable
@@ -10,13 +13,6 @@ from rich.console import Console
 from rich.table import Table
 from rich.text import Text as RichText
 
-from thinkingbox.common.chat_types import (
-    DecodeResult,
-    Text,
-    ToolResponse,
-)
-from thinkingbox.common.eval_utils import prob_in_zone
-from thinkingbox.common.utils import ErrorInfo, iter_validate_jsonl
 from thinkingbox.cli.stats import (
     mean_and_se_of_mean,
     pass_at_k,
@@ -25,6 +21,13 @@ from thinkingbox.cli.stats import (
     pass_power_k_exact_se,
     pass_rate_and_se,
 )
+from thinkingbox.common.chat_types import (
+    DecodeResult,
+    Text,
+    ToolResponse,
+)
+from thinkingbox.common.eval_utils import prob_in_zone
+from thinkingbox.common.utils import ErrorInfo, iter_validate_jsonl
 
 
 def format_result(value: float) -> str:
@@ -629,9 +632,7 @@ def aggregate_benchmark_metrics(
     if any(not suffix for suffix in aggregate_suffixes):
         raise ValueError("Dataset aggregation suffixes must not be empty")
 
-    normalized_suffixes = tuple(
-        sorted(set(aggregate_suffixes), key=len, reverse=True)
-    )
+    normalized_suffixes = tuple(sorted(set(aggregate_suffixes), key=len, reverse=True))
     grouped: dict[str, list[InstanceMetrics]] = {}
     source_datasets: dict[str, set[str]] = {}
     for metric in instance_metrics:
@@ -770,7 +771,8 @@ def agg(
             print_metrics(metrics)
     elif output_format == "json":
         obj = {
-            "per_test": [to_jsonable_python(obj) for obj in instance_metrics],
+            "per_test": [to_jsonable_python(obj) for obj in per_test_table],
+            "instance_metrics": [to_jsonable_python(obj) for obj in instance_metrics],
             "per_dataset": [to_jsonable_python(obj) for obj in dataset_metrics],
             "per_benchmark": [to_jsonable_python(obj) for obj in benchmark_metrics],
             "metrics": to_jsonable_python(metrics),

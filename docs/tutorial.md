@@ -164,6 +164,13 @@ Use `--aggregate-suffix _rubrics_yesno` to add combined benchmark totals
 for datasets split with that suffix. The option may be repeated, and
 individual dataset results remain visible.
 
+Use `--output-format json` for machine-readable results. `per_test` retains
+pass/fail/error counts, operational averages, Goldilocks fields, and per-instance
+statistics at k=N. `instance_metrics` contains the estimate/SE structures for
+all configured k values. Dataset, benchmark, and overall summaries are available
+under `per_dataset`, `per_benchmark`, and `metrics`. `--detailed` affects only
+the terminal table; all per-test fields are always included in JSON.
+
 Expected output:
 
 ```
