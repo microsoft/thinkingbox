@@ -156,8 +156,13 @@ head -n1 output.jsonl | uv run tb pp --less
 Show a summary table:
 
 ```bash
-uv run tb agg --concise output.jsonl
+uv run tb agg output.jsonl
 ```
+
+Use `--detailed` (or `-D`) to include per-test operational averages.
+Use `--aggregate-suffix _rubrics_yesno` to add combined benchmark totals
+for datasets split with that suffix. The option may be repeated, and
+individual dataset results remain visible.
 
 Expected output:
 

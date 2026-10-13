@@ -295,11 +295,11 @@ def make_per_test_table(
 
 
 def print_per_test_table(
-    table: list[PerTestCaseTableRow], show_details: bool = False
+    table: list[PerTestCaseTableRow], detailed: bool = False
 ) -> None:
     rich_table = Table(title="Test Results", box=box.DOUBLE)
     columns = PerTestCaseTableRow.columns()
-    if not show_details:
+    if not detailed:
         columns = {name: col for name, col in columns.items() if not col.details}
     for _, col in columns.items():
         rich_table.add_column(col.name, **col.kwargs)
@@ -621,16 +621,16 @@ def _benchmark_name(dataset: str, suffixes: tuple[str, ...]) -> str:
 
 def aggregate_benchmark_metrics(
     instance_metrics: list[InstanceMetrics],
-    aggregate_dataset_suffixes: tuple[str, ...],
+    aggregate_suffixes: tuple[str, ...],
 ) -> list[BenchmarkMetrics]:
     """Aggregate split dataset files into benchmark totals for matching suffixes."""
-    if not aggregate_dataset_suffixes:
+    if not aggregate_suffixes:
         return []
-    if any(not suffix for suffix in aggregate_dataset_suffixes):
+    if any(not suffix for suffix in aggregate_suffixes):
         raise ValueError("Dataset aggregation suffixes must not be empty")
 
     normalized_suffixes = tuple(
-        sorted(set(aggregate_dataset_suffixes), key=len, reverse=True)
+        sorted(set(aggregate_suffixes), key=len, reverse=True)
     )
     grouped: dict[str, list[InstanceMetrics]] = {}
     source_datasets: dict[str, set[str]] = {}
@@ -711,13 +711,14 @@ def print_metrics(metrics: Metrics) -> None:
     "input_file", required=True, default="-", metavar="INPUT", type=click.File("r")
 )
 @click.option(
-    "--show-details",
+    "-D",
+    "--detailed",
     is_flag=True,
     help="Show per-test operational averages and ranges.",
 )
 @click.option(
-    "--aggregate-dataset-suffix",
-    "aggregate_dataset_suffixes",
+    "--aggregate-suffix",
+    "aggregate_suffixes",
     multiple=True,
     help=(
         "Merge datasets whose filename stems end with this suffix into a "
@@ -734,8 +735,8 @@ def print_metrics(metrics: Metrics) -> None:
 )
 def agg(
     input_file,
-    show_details: bool,
-    aggregate_dataset_suffixes: tuple[str, ...],
+    detailed: bool,
+    aggregate_suffixes: tuple[str, ...],
     output_format: str,
 ):
     """
@@ -754,7 +755,7 @@ def agg(
     per_test_table = make_per_test_table(per_test_aggregated_results, instance_metrics)
     dataset_metrics = aggregate_dataset_metrics(instance_metrics)
     benchmark_metrics = aggregate_benchmark_metrics(
-        instance_metrics, aggregate_dataset_suffixes
+        instance_metrics, aggregate_suffixes
     )
     metrics = aggregate_results(instance_metrics, dataset_metrics, runs_per_test)
 
@@ -762,7 +763,7 @@ def agg(
         if not per_test_table:
             print("No test results to display.")
         else:
-            print_per_test_table(per_test_table, show_details=show_details)
+            print_per_test_table(per_test_table, detailed=detailed)
             print_dataset_metrics_table(dataset_metrics)
             if benchmark_metrics:
                 print_benchmark_metrics_table(benchmark_metrics)
