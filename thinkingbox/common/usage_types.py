@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 class InputTokensDetails(BaseModel):
     cached_tokens: int = 0
+    cache_creation_tokens: int = 0
 
 
 class OutputTokensDetails(BaseModel):

@@ -776,7 +776,16 @@ def test_dummy_message_filtered_from_payload():
 
 
 @pytest.mark.asyncio
-async def test_last_usage_set_after_completion(monkeypatch):
+@pytest.mark.parametrize(
+    ("cache_creation_tokens", "cache_read_tokens", "expected_total"),
+    [(12, 10, 172), (None, None, 150)],
+)
+async def test_last_usage_set_after_completion(
+    monkeypatch,
+    cache_creation_tokens,
+    cache_read_tokens,
+    expected_total,
+):
     """last_usage should be populated from the response usage field."""
     config = get_test_anthropic_config()
     session = AnthropicMessagesSession.from_config(config)
@@ -788,8 +797,8 @@ async def test_last_usage_set_after_completion(monkeypatch):
         "usage": {
             "input_tokens": 100,
             "output_tokens": 50,
-            "cache_creation_input_tokens": 0,
-            "cache_read_input_tokens": 10,
+            "cache_creation_input_tokens": cache_creation_tokens,
+            "cache_read_input_tokens": cache_read_tokens,
         },
     }
     monkeypatch.setattr(
@@ -803,5 +812,10 @@ async def test_last_usage_set_after_completion(monkeypatch):
     assert session.last_usage is not None
     assert session.last_usage.input_tokens == 100
     assert session.last_usage.output_tokens == 50
-    assert session.last_usage.input_tokens_details.cached_tokens == 10
-    assert session.last_usage.total_tokens == 150
+    assert session.last_usage.input_tokens_details.cached_tokens == (
+        cache_read_tokens or 0
+    )
+    assert session.last_usage.input_tokens_details.cache_creation_tokens == (
+        cache_creation_tokens or 0
+    )
+    assert session.last_usage.total_tokens == expected_total
