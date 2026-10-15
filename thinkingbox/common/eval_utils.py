@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import numpy as np
-from scipy.special import betainc, betaincinv, betaln
+from scipy.special import betainc, betaincc, betaincinv
 
 
 def beta_post_params(
@@ -56,31 +56,36 @@ def cred_int(
     return low, high
 
 
-def _beta_pdf(x: np.ndarray | float, a: float, b: float) -> np.ndarray | float:
-    lx = np.log(x)
-    l1x = np.log1p(-x)
-    logpdf = (a - 1.0) * lx + (b - 1.0) * l1x - betaln(a, b)
-    return np.exp(logpdf)
-
-
 def prob_A_gt_B(
     kA: int, nA: int, kB: int, nB: int, a0: float = 0.5, b0: float = 0.5
 ) -> float:
     """
-    Exact P(p_A > p_B) = INTEGRAL_0^1 f_A(x) * F_B(x) dx,
-    implemented with _beta_pdf() and betainc()
+    Exact P(p_A > p_B) = INTEGRAL_0^1 f_A(x) * F_B(x) dx
+                       = INTEGRAL_0^1 F_B(F_A^-1(u)) du   (u = F_A(x)),
+    implemented with betaincinv() and betainc()/betaincc()
+
+    Integrating over quantiles keeps the integrand bounded in [0, 1].
+    Integrating f_A directly on a fixed grid misses its peak when the
+    posterior is narrow or piled up at 0 or 1 (e.g. 1000/1000 passes).
+    We integrate over the quantiles of the narrower posterior, so the
+    integrand is smooth. When that is B, the integrand is the complement
+    1 - F_A(F_B^-1(u)) computed with betaincc(), rather than 1 - P(B > A),
+    so a very small P(A > B) is not lost to cancellation.
     """
 
     aA, bA = beta_post_params(kA, nA, a0, b0)
     aB, bB = beta_post_params(kB, nB, a0, b0)
+    swap = aB + bB > aA + bA
+    if swap:
+        aA, bA, aB, bB = aB, bB, aA, bA
 
-    # 200-pt GL; adjust if needed.
     x, w = np.polynomial.legendre.leggauss(200)  # 200-pt GL; adjust if needed
     # convert frm [-1,1] to [0,1]
-    t = (x + 1.0) / 2.0
-    wt = w / 2.0
-    integrand = _beta_pdf(t, aA, bA) * betainc(aB, bB, t)
-    return float(np.sum(wt * integrand))
+    u = (x + 1.0) / 2.0
+    wu = w / 2.0
+    f = betaincc if swap else betainc
+    integrand = f(aB, bB, betaincinv(aA, bA, u))
+    return float(np.sum(wu * integrand))
 
 
 # Sampling to estimate P(A-B > epsilon)

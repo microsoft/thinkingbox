@@ -16,7 +16,7 @@ dependencies = [
     "pyyaml",
     "prompt_toolkit",
     "uvicorn",
-    "scipy",
+    "scipy>=1.11",  # scipy.special.betaincc
     "starlette",
     "numpy",
     "typesense",
