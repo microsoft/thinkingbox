@@ -474,7 +474,7 @@ def dump_arg(ctx, param, value):
     "--output-queue-size",
     type=int,
     default=-1,
-    help="How many out-of-order items to keep in memory before blocking (default: 10 * batch-size)",
+    help="How many out-of-order items to keep in memory before blocking (default: 5 * batch-size)",
 )
 @click.option("-v", "--verbose", is_flag=True, help="Enable verbose output")
 @click.option("-o", "--output", required=True, help="Output file path")
