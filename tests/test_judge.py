@@ -109,3 +109,19 @@ def test_text_yesno_returns_boolean_and_records_decision():
             "motivation": "Insufficient info",
         }
     ]
+
+
+def test_text_yesno_with_motivation_malformed_shapes_fall_back():
+    # Valid JSON that violates the "answer: Yes/No in quotes" contract must fall
+    # back to a safe "No" rather than crashing (bool answer, missing key,
+    # non-object JSON).
+    for resp in (
+        '{"motivation": "x", "answer": true}',
+        '{"motivation": "x"}',
+        '["Yes"]',
+        '5',
+    ):
+        judge = Judge(_mock_judge_llm([resp]))
+        result = judge.text_yesno_with_motivation("reply", "Did they comply?")
+        assert result["answer"] is False
+        assert result["motivation"] == "Failed to parse response"
