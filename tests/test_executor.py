@@ -246,3 +246,28 @@ async def test_watchdog_disabled():
 
     # All tasks complete normally (not canceled)
     assert results == ["done-0", "done-1", "done-2"]
+
+
+def test_signalevent_unknown_signal_does_not_crash():
+    # A signal name absent on the platform must skip gracefully, not raise.
+    from thinkingbox.common.ordered_parallel_executor import SignalEvent
+
+    ev = SignalEvent("SIGDOESNOTEXIST")
+    ev.install()  # must not raise
+
+
+def test_signalevent_registers_configured_signal(monkeypatch):
+    import signal as _signal
+
+    from thinkingbox.common.ordered_parallel_executor import SignalEvent
+
+    captured = {}
+
+    class FakeLoop:
+        def add_signal_handler(self, sig, handler):
+            captured["sig"] = sig
+
+    monkeypatch.setattr(asyncio, "get_running_loop", lambda: FakeLoop())
+    ev = SignalEvent("SIGTERM")
+    ev.install()
+    assert captured["sig"] == _signal.SIGTERM

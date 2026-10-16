@@ -58,11 +58,11 @@ class SignalEvent:
         if self._installed:
             return
         self._installed = True
-        sig = getattr(signal, self._signal_name)
+        sig = getattr(signal, self._signal_name, None)
         if sig is None:
             return
         loop = asyncio.get_running_loop()
-        loop.add_signal_handler(signal.SIGUSR1, self.handler)
+        loop.add_signal_handler(sig, self.handler)
 
     def get(self):
         value = self._flag
