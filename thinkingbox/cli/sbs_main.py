@@ -83,14 +83,14 @@ def print_results(
                 f"{(base_passed / base_res.runs * 100):.2f}%"
                 if base_res.runs > 0
                 else "0.00%"
-                + f" ({base_succ_low*100:.2f}% , {base_succ_high*100:.2f}%)"
-            ),
+            )
+            + f" ({base_succ_low*100:.2f}% , {base_succ_high*100:.2f}%)",
             (
                 f"{(cand_passed / can_res.runs * 100):.2f}%"
                 if can_res.runs > 0
                 else "0.00%"
-                + f" ({cand_succ_low*100:.2f}% , {cand_succ_high*100:.2f}%)"
-            ),
+            )
+            + f" ({cand_succ_low*100:.2f}% , {cand_succ_high*100:.2f}%)",
             f"{prob*100:.2f}%",
             f"{pct_lift_gt*100:.2f}%",
         )
