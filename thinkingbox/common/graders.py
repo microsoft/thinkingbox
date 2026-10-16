@@ -55,6 +55,10 @@ def match_score(
         )
 
     if partial and isinstance(expected, dict):
+        if not expected:
+            # An empty expected dict has no required keys, so it is trivially
+            # matched; avoid dividing by len(expected) == 0.
+            return 1.0
         score = sum(
             1 for k in expected if k in result and result[k] == expected[k]
         ) / len(expected)
