@@ -97,7 +97,7 @@ class Judge:
         try:
             answer = json.loads(answer_raw)
             answer["answer"] = _parse_yesno(answer["answer"])
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, KeyError, TypeError, AttributeError):
             answer = {
                 # If the model failed to follow the JSON format contract we
                 # cannot trust the raw response, so default to "No".
