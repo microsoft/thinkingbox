@@ -770,3 +770,31 @@ def test_get_testfile_path_does_not_find_filename_as_directory(tmp_path):
     ds = Dataset(tmp_path)
     with pytest.raises(FileNotFoundError):
         ds.get_testfile_path("my_test.py")
+
+
+def test_hydrate_preserves_eval_tag_from_scenario(tmp_path):
+    """Regression: an eval:* tag on the scenario must survive hydration.
+
+    The eval:* tag drives Leaderboard bucketing; it was previously dropped
+    because hydrate_test_case did not carry eval_type into the merged tags.
+    """
+    _create_file(tmp_path / "agent" / "myagent.yaml", get_agent())
+    _create_file(
+        tmp_path / "scenario" / "myscenario.yaml",
+        get_scenario_data(
+            tags=["domain:customer-service", "eval:orchestration:tool-selection"]
+        ),
+    )
+    _create_file(tmp_path / "test_case" / "mytest.py", get_test_data())
+    cases = list(
+        iter_cases_from_file_or_folder(
+            path=tmp_path / "test_case" / "mytest.py",
+            base_dir=tmp_path,
+            agent="myagent",
+        )
+    )
+    assert len(cases) == 2
+    for tc in cases:
+        assert tc.tags.domain == "customer-service"
+        assert tc.tags.eval_type is not None, "eval:* tag was dropped during hydration"
+        assert "orchestration" in str(tc.tags.eval_type.value)
