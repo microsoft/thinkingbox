@@ -135,6 +135,13 @@ class Dataset:
         # Category always comes from test case
         category = tc.tags.category if tc.tags else []
 
+        # Eval type comes from scenario, test case can override
+        eval_type = None
+        if tc.tags and tc.tags.eval_type:
+            eval_type = tc.tags.eval_type
+        elif scenario.tags and scenario.tags.eval_type:
+            eval_type = scenario.tags.eval_type
+
         # Skip if either scenario or test case has skip=True
         skip = bool(
             (scenario.tags and scenario.tags.skip) or (tc.tags and tc.tags.skip)
@@ -144,6 +151,7 @@ class Dataset:
             labels=merged_labels,
             domain=domain,
             category=category,
+            eval_type=eval_type,
             skip=skip,
         )
 
