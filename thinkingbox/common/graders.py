@@ -32,6 +32,8 @@ def average_reward(
 
         weighted_sum = sum(rewards[key] * weights[key] for key in common_keys)
         weight_sum = sum(weights[key] for key in common_keys)
+        if weight_sum == 0:
+            return 0.0
 
         return weighted_sum / weight_sum
 
