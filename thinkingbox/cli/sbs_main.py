@@ -64,16 +64,18 @@ def print_results(
         kB = base_passed
         nB = base_res.runs - len(base_res.failed_decodings)
 
+        # The comparison stats need both sides, but each side's credible
+        # interval only needs its own decodable runs: zeroing both whenever
+        # either side is empty displayed a wrong (0.00%, 0.00%) CI for the
+        # side that did have decodable runs.
         if nA <= 0 or nB <= 0:
             prob = 0.0
             pct_lift_gt, se = 0.0, 0.0
-            base_succ_low, base_succ_high = 0.0, 0.0
-            cand_succ_low, cand_succ_high = 0.0, 0.0
         else:
             prob = prob_A_gt_B(kA, nA, kB, nB)
             pct_lift_gt, se = prob_lift_gt_eps(kA, nA, kB, nB, pct_lift)
-            base_succ_low, base_succ_high = cred_int(kB, nB)
-            cand_succ_low, cand_succ_high = cred_int(kA, nA)
+        base_succ_low, base_succ_high = cred_int(kB, nB) if nB > 0 else (0.0, 0.0)
+        cand_succ_low, cand_succ_high = cred_int(kA, nA) if nA > 0 else (0.0, 0.0)
 
         row_tuple = (
             uid,
